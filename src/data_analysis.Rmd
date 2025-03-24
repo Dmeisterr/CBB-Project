@@ -13,3 +13,9 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Introduction
+Project Goal: The project goal is to identify distinct team archetypes for college basketball by using clustering based on offensive and defensive metrics. We will then aim to analyze how archetype combinations perform against each other in different matchups.
+
+# Data
+
+
