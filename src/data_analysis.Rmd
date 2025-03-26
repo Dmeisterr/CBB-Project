@@ -10,12 +10,67 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+# Load necessary libraries and set global options
 knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(cluster)       # For clustering
+library(factoextra)    # For visualizing clusters
+library(ggplot2)       # For data visualization
 ```
 
 # Introduction
-Project Goal: The project goal is to identify distinct team archetypes for college basketball by using clustering based on offensive and defensive metrics. We will then aim to analyze how archetype combinations perform against each other in different matchups.
+Project Goal: 
+    The project goal is to identify distinct team archetypes 
+    for college basketball by using clustering based on offensive and defensive 
+    metrics. We will then aim to analyze how archetype combinations perform 
+    against each other in different matchups.
 
-# Data
+## Data Collection
+```{r data-collection}
+data <- read.csv("")
+head(data)
+```
 
+## Data Cleaning
+```{r data-cleaning}
+```
 
+# Feature Selection
+```{r feature-selection}
+# Select features for clustering
+```
+
+# Exploratory Data Analysis
+```{r eda}
+```
+
+# Clustering Analysis
+
+## Determine Optimal Number of Clusters
+```{r optimal-clusters}
+# Determine optimal number of clusters
+```
+
+## Perform Clustering
+```{r clustering}
+# Apply K-Means Clustering
+```
+
+## Visualize Clusters
+```{r cluster-visualization}
+# Plot clusters
+```
+
+# Matchup Analysis
+```{r matchup-analysis}
+# Analyze performance between clusters
+```
+
+# Results
+```{r results}
+# Summarize key findings
+```
+
+# Conclusion
+
+# References
