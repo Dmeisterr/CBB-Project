@@ -1,0 +1,105 @@
+---
+title: "Merge College Basketball Datasets"
+author: ""
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(readxl)
+```
+
+# Data Merging
+
+## Load Datasets
+```{r load-datasets}
+# Load datasets
+defense_19 <- read_csv("data/defense_four_factors_19.csv")
+defense_20 <- read_csv("data/defense_four_factors_20.csv")
+defense_21 <- read_csv("data/defense_four_factors_21.csv")
+defense_22 <- read_csv("data/defense_four_factors_22.csv")
+defense_23 <- read_csv("data/defense_four_factors_23.csv")
+defense_24 <- read_csv("data/defense_four_factors_24.csv")
+
+eff_tempo_19 <- read_csv("data/eff_tempo_19.csv")
+eff_tempo_20 <- read_csv("data/eff_tempo_20.csv")
+eff_tempo_21 <- read_csv("data/eff_tempo_21.csv")
+eff_tempo_22 <- read_csv("data/eff_tempo_22.csv")
+eff_tempo_23 <- read_csv("data/eff_tempo_23.csv")
+eff_tempo_24 <- read_csv("data/eff_tempo_24.csv")
+
+height19 <- read_csv("data/height19.csv")
+height20 <- read_csv("data/height20.csv")
+height21 <- read_csv("data/height21.csv")
+height22 <- read_csv("data/height22.csv")
+height23 <- read_csv("data/height23.csv")
+height24 <- read_csv("data/height24.csv")
+
+kp_19 <- read_csv("data/kpratings_19_pt.csv")
+kp_20 <- read_csv("data/kpratings_20_pt.csv")
+kp_21 <- read_csv("data/kpratings_21_pt.csv")
+kp_22 <- read_csv("data/kpratings_22_pt.csv")
+kp_23 <- read_csv("data/kpratings_23_pt.csv")
+kp_24 <- read_csv("data/kpratings_24_pt.csv")
+
+misc_def_19 <- read_csv("data/misc_defense_19.csv")
+misc_def_20 <- read_csv("data/misc_defense_20.csv")
+misc_def_21 <- read_csv("data/misc_defense_21.csv")
+misc_def_22 <- read_csv("data/misc_defense_22.csv")
+misc_def_23 <- read_csv("data/misc_defense_23.csv")
+misc_def_24 <- read_csv("data/misc_defense_24.csv")
+
+misc_offense_19 <- read_csv("data/misc_offense_19.csv")
+misc_offense_20 <- read_csv("data/misc_offense_20.csv")
+misc_offense_21 <- read_csv("data/misc_offense_21.csv")
+misc_offense_22 <- read_csv("data/misc_offense_22.csv")
+misc_offense_23 <- read_csv("data/misc_offense_23.csv")
+misc_offense_24 <- read_csv("data/misc_offense_24.csv")
+
+offense_19 <- read_csv("data/offense_four_factors_19.csv")
+offense_20 <- read_csv("data/offense_four_factors_20.csv")
+offense_21 <- read_csv("data/offense_four_factors_21.csv")
+offense_22 <- read_csv("data/offense_four_factors_22.csv")
+offense_23 <- read_csv("data/offense_four_factors_23.csv")
+offense_24 <- read_csv("data/offense_four_factors_24.csv")
+
+point_dist_19 <- read_csv("data/pointdist19.csv")
+point_dist_20 <- read_csv("data/pointdist20.csv")
+point_dist_21 <- read_csv("data/pointdist21.csv")
+point_dist_22 <- read_csv("data/pointdist22.csv")
+point_dist_23 <- read_csv("data/pointdist23.csv")
+point_dist_24 <- read_csv("data/pointdist24.csv")
+```
+
+## Merge Datasets
+```{r merge-datasets}
+# Merge datasets
+defense <- bind_rows(defense_19, defense_20, defense_21, defense_22, defense_23, defense_24)
+eff_tempo <- bind_rows(eff_tempo_19, eff_tempo_20, eff_tempo_21, eff_tempo_22, eff_tempo_23, eff_tempo_24)
+height <- bind_rows(height19, height20, height21, height22, height23, height24)
+kp <- bind_rows(kp_19, kp_20, kp_21, kp_22, kp_23, kp_24)
+misc_def <- bind_rows(misc_def_19, misc_def_20, misc_def_21, misc_def_22, misc_def_23, misc_def_24)
+misc_offense <- bind_rows(misc_offense_19, misc_offense_20, misc_offense_21, misc_offense_22, misc_offense_23, misc_offense_24)
+offense <- bind_rows(offense_19, offense_20, offense_21, offense_22, offense_23, offense_24)
+point_dist <- bind_rows(point_dist_19, point_dist_20, point_dist_21, point_dist_22, point_dist_23, point_dist_24)
+```
+
+## Join Datasets
+```{r join-datasets}
+# Join datasets on TeamName
+data <- defense %>%
+  left_join(eff_tempo, by = "TeamName") %>%
+  left_join(height, by = "TeamName") %>%
+  left_join(kp, by = "TeamName") %>%
+  left_join(misc_def, by = "TeamName") %>%
+  left_join(misc_offense, by = "TeamName") %>%
+  left_join(offense, by = "TeamName") %>%
+  left_join(point_dist, by = "TeamName")
+```
+
+
+
+
