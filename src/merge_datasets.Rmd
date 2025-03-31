@@ -78,38 +78,48 @@ point_dist_24 <- read_csv("data/pointdist24.csv", na = c("NULL"))
 ```{r clean-datasets}
 # Clean eff_tempo datasets
 
-# add year column
-eff_tempo_19 <- eff_tempo_19 %>%
-  mutate(Year = 2019)
+# # add year column
+# eff_tempo_19 <- eff_tempo_19 %>%
+#   mutate(Year = 2019)
 
-eff_tempo_20 <- eff_tempo_20 %>%
-  mutate(Year = 2020)
+# eff_tempo_20 <- eff_tempo_20 %>%
+#   mutate(Year = 2020)
 
-eff_tempo_21 <- eff_tempo_21 %>%
-  mutate(Year = 2021)
+# eff_tempo_21 <- eff_tempo_21 %>%
+#   mutate(Year = 2021)
 
-eff_tempo_22 <- eff_tempo_22 %>%
-  mutate(Year = 2022)
+# eff_tempo_22 <- eff_tempo_22 %>%
+#   mutate(Year = 2022)
 
-eff_tempo_23 <- eff_tempo_23 %>%
-  mutate(Year = 2023)
+# eff_tempo_23 <- eff_tempo_23 %>%
+#   mutate(Year = 2023)
 
-eff_tempo_24 <- eff_tempo_24 %>%
-  mutate(Year = 2024)
+# eff_tempo_24 <- eff_tempo_24 %>%
+#   mutate(Year = 2024)
 
-# rename team to TeamName
-eff_tempo_19 <- eff_tempo_19 %>%
-  rename(TeamName = Team)
-eff_tempo_20 <- eff_tempo_20 %>%
-  rename(TeamName = Team)
-eff_tempo_21 <- eff_tempo_21 %>%
-  rename(TeamName = Team)
-eff_tempo_22 <- eff_tempo_22 %>%
-  rename(TeamName = Team)
-eff_tempo_23 <- eff_tempo_23 %>%
-  rename(TeamName = Team)
-eff_tempo_24 <- eff_tempo_24 %>%
-  rename(TeamName = Team)
+# remove quotes from TeamName entries
+eff_tempo_19$TeamName <- gsub("\"", "", eff_tempo_19$TeamName)
+eff_tempo_20$TeamName <- gsub("\"", "", eff_tempo_20$TeamName)
+eff_tempo_21$TeamName <- gsub("\"", "", eff_tempo_21$TeamName)
+eff_tempo_22$TeamName <- gsub("\"", "", eff_tempo_22$TeamName)
+eff_tempo_23$TeamName <- gsub("\"", "", eff_tempo_23$TeamName)
+eff_tempo_24$TeamName <- gsub("\"", "", eff_tempo_24$TeamName)
+
+
+
+# # rename team to TeamName
+# eff_tempo_19 <- eff_tempo_19 %>%
+#   rename(TeamName = Team)
+# eff_tempo_20 <- eff_tempo_20 %>%
+#   rename(TeamName = Team)
+# eff_tempo_21 <- eff_tempo_21 %>%
+#   rename(TeamName = Team)
+# eff_tempo_22 <- eff_tempo_22 %>%
+#   rename(TeamName = Team)
+# eff_tempo_23 <- eff_tempo_23 %>%
+#   rename(TeamName = Team)
+# eff_tempo_24 <- eff_tempo_24 %>%
+#   rename(TeamName = Team)
 
 # remove numbers from TeamName
 eff_tempo_19$TeamName <- gsub("[0-9]", "", eff_tempo_19$TeamName)
@@ -119,19 +129,47 @@ eff_tempo_22$TeamName <- gsub("[0-9]", "", eff_tempo_22$TeamName)
 eff_tempo_23$TeamName <- gsub("[0-9]", "", eff_tempo_23$TeamName)
 eff_tempo_24$TeamName <- gsub("[0-9]", "", eff_tempo_24$TeamName)
 
-# add quotes around TeamName
-eff_tempo_19$TeamName <- paste0("\"", eff_tempo_19$TeamName, "\"")
-eff_tempo_20$TeamName <- paste0("\"", eff_tempo_20$TeamName, "\"")
-eff_tempo_21$TeamName <- paste0("\"", eff_tempo_21$TeamName, "\"")
-eff_tempo_22$TeamName <- paste0("\"", eff_tempo_22$TeamName, "\"")
-eff_tempo_23$TeamName <- paste0("\"", eff_tempo_23$TeamName, "\"")
-eff_tempo_24$TeamName <- paste0("\"", eff_tempo_24$TeamName, "\"")
+# rename Year to Season
+# eff_tempo_19 <- eff_tempo_19 %>%
+#   rename(Season = Year)
+# eff_tempo_20 <- eff_tempo_20 %>%
+#   rename(Season = Year)
+# eff_tempo_21 <- eff_tempo_21 %>%
+#   rename(Season = Year)
+# eff_tempo_22 <- eff_tempo_22 %>%
+#   rename(Season = Year)
+# eff_tempo_23 <- eff_tempo_23 %>%
+#   rename(Season = Year)
+# eff_tempo_24 <- eff_tempo_24 %>%
+#   rename(Season = Year)
+
+# remove Team column
+eff_tempo_19 <- eff_tempo_19 %>%
+  select(-Team)
+eff_tempo_20 <- eff_tempo_20 %>%
+  select(-Team)
+eff_tempo_21 <- eff_tempo_21 %>%
+  select(-Team)
+eff_tempo_22 <- eff_tempo_22 %>%
+  select(-Team)
+eff_tempo_23 <- eff_tempo_23 %>%
+  select(-Team)
+eff_tempo_24 <- eff_tempo_24 %>%
+  select(-Team)
+
+# rewrite csv files
+write_csv(eff_tempo_19, "data/eff_tempo_19.csv")
+write_csv(eff_tempo_20, "data/eff_tempo_20.csv")
+write_csv(eff_tempo_21, "data/eff_tempo_21.csv")
+write_csv(eff_tempo_22, "data/eff_tempo_22.csv")
+write_csv(eff_tempo_23, "data/eff_tempo_23.csv")
+write_csv(eff_tempo_24, "data/eff_tempo_24.csv")
 ```
 ## Merge Datasets
 ```{r merge-datasets}
 # Merge datasets
 defense <- bind_rows(defense_19, defense_20, defense_21, defense_22, defense_23, defense_24)
-# eff_tempo <- bind_rows(eff_tempo_19, eff_tempo_20, eff_tempo_21, eff_tempo_22, eff_tempo_23, eff_tempo_24)
+eff_tempo <- bind_rows(eff_tempo_19, eff_tempo_20, eff_tempo_21, eff_tempo_22, eff_tempo_23, eff_tempo_24)
 height <- bind_rows(height19, height20, height21, height22, height23, height24)
 kp <- bind_rows(kp_19, kp_20, kp_21, kp_22, kp_23, kp_24)
 misc_def <- bind_rows(misc_def_19, misc_def_20, misc_def_21, misc_def_22, misc_def_23, misc_def_24)
@@ -141,12 +179,11 @@ point_dist <- bind_rows(point_dist_19, point_dist_20, point_dist_21, point_dist_
 ```
 
 
-
-
 ## Join Datasets
 ```{r join-datasets}
 # Join datasets on TeamName
 data <- defense %>%
+  left_join(eff_tempo, by = c("TeamName", "Season")) %>%
   left_join(height, by = c("TeamName", "Season")) %>%
   left_join(kp, by = c("TeamName", "Season")) %>%
   left_join(misc_def, by = c("TeamName", "Season")) %>%

@@ -417,60 +417,56 @@ defense_19 &lt;- read_csv(&quot;data/defense_four_factors_19.csv&quot;, na = c(&
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 <pre class="r"><code>eff_tempo_19 &lt;- read_csv(&quot;data/eff_tempo_19.csv&quot;, na = c(&quot;NULL&quot;))</code></pre>
-<pre><code>## Rows: 353 Columns: 18
+<pre><code>## Rows: 353 Columns: 20
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
-## chr  (2): Team, Conf
-## dbl (16): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
+## chr  (3): TeamName, Conf, Team
+## dbl (17): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 <pre class="r"><code>eff_tempo_20 &lt;- read_csv(&quot;data/eff_tempo_20.csv&quot;, na = c(&quot;NULL&quot;))</code></pre>
-<pre><code>## Rows: 353 Columns: 18
+<pre><code>## Rows: 353 Columns: 20
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
-## chr  (2): Team, Conf
-## dbl (16): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
+## chr  (3): TeamName, Conf, Team
+## dbl (17): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 <pre class="r"><code>eff_tempo_21 &lt;- read_csv(&quot;data/eff_tempo_21.csv&quot;, na = c(&quot;NULL&quot;))</code></pre>
-<pre><code>## Rows: 357 Columns: 18
+<pre><code>## Rows: 357 Columns: 20
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
-## chr  (2): Team, Conf
-## dbl (16): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
+## chr  (3): TeamName, Conf, Team
+## dbl (17): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 <pre class="r"><code>eff_tempo_22 &lt;- read_csv(&quot;data/eff_tempo_22.csv&quot;, na = c(&quot;NULL&quot;))</code></pre>
-<pre><code>## Rows: 358 Columns: 18
+<pre><code>## Rows: 358 Columns: 20
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
-## chr  (2): Team, Conf
-## dbl (16): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
+## chr  (3): TeamName, Conf, Team
+## dbl (17): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 <pre class="r"><code>eff_tempo_23 &lt;- read_csv(&quot;data/eff_tempo_23.csv&quot;, na = c(&quot;NULL&quot;))</code></pre>
-<pre><code>## Rows: 363 Columns: 18
+<pre><code>## Rows: 363 Columns: 20
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
-## chr  (2): Team, Conf
-## dbl (16): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
+## chr  (3): TeamName, Conf, Team
+## dbl (17): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 <pre class="r"><code>eff_tempo_24 &lt;- read_csv(&quot;data/eff_tempo_24.csv&quot;, na = c(&quot;NULL&quot;))</code></pre>
-<pre><code>## Warning: One or more parsing issues, call `problems()` on your data frame for details,
-## e.g.:
-##   dat &lt;- vroom(...)
-##   problems(dat)</code></pre>
-<pre><code>## Rows: 378 Columns: 18
+<pre><code>## Rows: 362 Columns: 20
 ## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
-## chr (10): Team, Conf, tempo_adj, tempo_raw, pos_len_off, pos_len_def, off_ef...
-## dbl  (8): tempo_adj_rk, tempo_raw_rk, pos_len_off_rk, pos_len_def_rk, off_ef...
+## chr  (3): TeamName, Conf, Team
+## dbl (17): tempo_adj, tempo_adj_rk, tempo_raw, tempo_raw_rk, pos_len_off, pos...
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
@@ -825,38 +821,48 @@ defense_19 &lt;- read_csv(&quot;data/defense_four_factors_19.csv&quot;, na = c(&
 <h2>Clean Datasets</h2>
 <pre class="r"><code># Clean eff_tempo datasets
 
-# add year column
-eff_tempo_19 &lt;- eff_tempo_19 %&gt;%
-  mutate(Year = 2019)
+# # add year column
+# eff_tempo_19 &lt;- eff_tempo_19 %&gt;%
+#   mutate(Year = 2019)
 
-eff_tempo_20 &lt;- eff_tempo_20 %&gt;%
-  mutate(Year = 2020)
+# eff_tempo_20 &lt;- eff_tempo_20 %&gt;%
+#   mutate(Year = 2020)
 
-eff_tempo_21 &lt;- eff_tempo_21 %&gt;%
-  mutate(Year = 2021)
+# eff_tempo_21 &lt;- eff_tempo_21 %&gt;%
+#   mutate(Year = 2021)
 
-eff_tempo_22 &lt;- eff_tempo_22 %&gt;%
-  mutate(Year = 2022)
+# eff_tempo_22 &lt;- eff_tempo_22 %&gt;%
+#   mutate(Year = 2022)
 
-eff_tempo_23 &lt;- eff_tempo_23 %&gt;%
-  mutate(Year = 2023)
+# eff_tempo_23 &lt;- eff_tempo_23 %&gt;%
+#   mutate(Year = 2023)
 
-eff_tempo_24 &lt;- eff_tempo_24 %&gt;%
-  mutate(Year = 2024)
+# eff_tempo_24 &lt;- eff_tempo_24 %&gt;%
+#   mutate(Year = 2024)
 
-# rename team to TeamName
-eff_tempo_19 &lt;- eff_tempo_19 %&gt;%
-  rename(TeamName = Team)
-eff_tempo_20 &lt;- eff_tempo_20 %&gt;%
-  rename(TeamName = Team)
-eff_tempo_21 &lt;- eff_tempo_21 %&gt;%
-  rename(TeamName = Team)
-eff_tempo_22 &lt;- eff_tempo_22 %&gt;%
-  rename(TeamName = Team)
-eff_tempo_23 &lt;- eff_tempo_23 %&gt;%
-  rename(TeamName = Team)
-eff_tempo_24 &lt;- eff_tempo_24 %&gt;%
-  rename(TeamName = Team)
+# remove quotes from TeamName entries
+eff_tempo_19$TeamName &lt;- gsub(&quot;\&quot;&quot;, &quot;&quot;, eff_tempo_19$TeamName)
+eff_tempo_20$TeamName &lt;- gsub(&quot;\&quot;&quot;, &quot;&quot;, eff_tempo_20$TeamName)
+eff_tempo_21$TeamName &lt;- gsub(&quot;\&quot;&quot;, &quot;&quot;, eff_tempo_21$TeamName)
+eff_tempo_22$TeamName &lt;- gsub(&quot;\&quot;&quot;, &quot;&quot;, eff_tempo_22$TeamName)
+eff_tempo_23$TeamName &lt;- gsub(&quot;\&quot;&quot;, &quot;&quot;, eff_tempo_23$TeamName)
+eff_tempo_24$TeamName &lt;- gsub(&quot;\&quot;&quot;, &quot;&quot;, eff_tempo_24$TeamName)
+
+
+
+# # rename team to TeamName
+# eff_tempo_19 &lt;- eff_tempo_19 %&gt;%
+#   rename(TeamName = Team)
+# eff_tempo_20 &lt;- eff_tempo_20 %&gt;%
+#   rename(TeamName = Team)
+# eff_tempo_21 &lt;- eff_tempo_21 %&gt;%
+#   rename(TeamName = Team)
+# eff_tempo_22 &lt;- eff_tempo_22 %&gt;%
+#   rename(TeamName = Team)
+# eff_tempo_23 &lt;- eff_tempo_23 %&gt;%
+#   rename(TeamName = Team)
+# eff_tempo_24 &lt;- eff_tempo_24 %&gt;%
+#   rename(TeamName = Team)
 
 # remove numbers from TeamName
 eff_tempo_19$TeamName &lt;- gsub(&quot;[0-9]&quot;, &quot;&quot;, eff_tempo_19$TeamName)
@@ -866,19 +872,47 @@ eff_tempo_22$TeamName &lt;- gsub(&quot;[0-9]&quot;, &quot;&quot;, eff_tempo_22$T
 eff_tempo_23$TeamName &lt;- gsub(&quot;[0-9]&quot;, &quot;&quot;, eff_tempo_23$TeamName)
 eff_tempo_24$TeamName &lt;- gsub(&quot;[0-9]&quot;, &quot;&quot;, eff_tempo_24$TeamName)
 
-# add quotes around TeamName
-eff_tempo_19$TeamName &lt;- paste0(&quot;\&quot;&quot;, eff_tempo_19$TeamName, &quot;\&quot;&quot;)
-eff_tempo_20$TeamName &lt;- paste0(&quot;\&quot;&quot;, eff_tempo_20$TeamName, &quot;\&quot;&quot;)
-eff_tempo_21$TeamName &lt;- paste0(&quot;\&quot;&quot;, eff_tempo_21$TeamName, &quot;\&quot;&quot;)
-eff_tempo_22$TeamName &lt;- paste0(&quot;\&quot;&quot;, eff_tempo_22$TeamName, &quot;\&quot;&quot;)
-eff_tempo_23$TeamName &lt;- paste0(&quot;\&quot;&quot;, eff_tempo_23$TeamName, &quot;\&quot;&quot;)
-eff_tempo_24$TeamName &lt;- paste0(&quot;\&quot;&quot;, eff_tempo_24$TeamName, &quot;\&quot;&quot;)</code></pre>
+# rename Year to Season
+# eff_tempo_19 &lt;- eff_tempo_19 %&gt;%
+#   rename(Season = Year)
+# eff_tempo_20 &lt;- eff_tempo_20 %&gt;%
+#   rename(Season = Year)
+# eff_tempo_21 &lt;- eff_tempo_21 %&gt;%
+#   rename(Season = Year)
+# eff_tempo_22 &lt;- eff_tempo_22 %&gt;%
+#   rename(Season = Year)
+# eff_tempo_23 &lt;- eff_tempo_23 %&gt;%
+#   rename(Season = Year)
+# eff_tempo_24 &lt;- eff_tempo_24 %&gt;%
+#   rename(Season = Year)
+
+# remove Team column
+eff_tempo_19 &lt;- eff_tempo_19 %&gt;%
+  select(-Team)
+eff_tempo_20 &lt;- eff_tempo_20 %&gt;%
+  select(-Team)
+eff_tempo_21 &lt;- eff_tempo_21 %&gt;%
+  select(-Team)
+eff_tempo_22 &lt;- eff_tempo_22 %&gt;%
+  select(-Team)
+eff_tempo_23 &lt;- eff_tempo_23 %&gt;%
+  select(-Team)
+eff_tempo_24 &lt;- eff_tempo_24 %&gt;%
+  select(-Team)
+
+# rewrite csv files
+write_csv(eff_tempo_19, &quot;data/eff_tempo_19.csv&quot;)
+write_csv(eff_tempo_20, &quot;data/eff_tempo_20.csv&quot;)
+write_csv(eff_tempo_21, &quot;data/eff_tempo_21.csv&quot;)
+write_csv(eff_tempo_22, &quot;data/eff_tempo_22.csv&quot;)
+write_csv(eff_tempo_23, &quot;data/eff_tempo_23.csv&quot;)
+write_csv(eff_tempo_24, &quot;data/eff_tempo_24.csv&quot;)</code></pre>
 </div>
 <div id="merge-datasets" class="section level2">
 <h2>Merge Datasets</h2>
 <pre class="r"><code># Merge datasets
 defense &lt;- bind_rows(defense_19, defense_20, defense_21, defense_22, defense_23, defense_24)
-# eff_tempo &lt;- bind_rows(eff_tempo_19, eff_tempo_20, eff_tempo_21, eff_tempo_22, eff_tempo_23, eff_tempo_24)
+eff_tempo &lt;- bind_rows(eff_tempo_19, eff_tempo_20, eff_tempo_21, eff_tempo_22, eff_tempo_23, eff_tempo_24)
 height &lt;- bind_rows(height19, height20, height21, height22, height23, height24)
 kp &lt;- bind_rows(kp_19, kp_20, kp_21, kp_22, kp_23, kp_24)
 misc_def &lt;- bind_rows(misc_def_19, misc_def_20, misc_def_21, misc_def_22, misc_def_23, misc_def_24)
@@ -890,6 +924,7 @@ point_dist &lt;- bind_rows(point_dist_19, point_dist_20, point_dist_21, point_di
 <h2>Join Datasets</h2>
 <pre class="r"><code># Join datasets on TeamName
 data &lt;- defense %&gt;%
+  left_join(eff_tempo, by = c(&quot;TeamName&quot;, &quot;Season&quot;)) %&gt;%
   left_join(height, by = c(&quot;TeamName&quot;, &quot;Season&quot;)) %&gt;%
   left_join(kp, by = c(&quot;TeamName&quot;, &quot;Season&quot;)) %&gt;%
   left_join(misc_def, by = c(&quot;TeamName&quot;, &quot;Season&quot;)) %&gt;%
