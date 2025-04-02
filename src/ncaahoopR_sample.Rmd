@@ -1,0 +1,103 @@
+---
+title: "NCAA Score Scraper"
+author: "Seth Jernigan"
+date: "2025-03-31"
+output: pdf_document
+---
+
+```{r}
+setwd("C:/Users/SethJ/OneDrive/Desktop/U of A/Spring 2025/Sports Analytics/ncaahoopR_data")
+
+starter_path <- "C:/Users/SethJ/OneDrive/Desktop/U of A/Spring 2025/Sports Analytics/ncaahoopR_data"
+```
+
+```{r}
+acc <- c("Boston_College", "Clemson", "Duke", "Florida_State", "Georgia_Tech",
+         "Louisville", "Miami", "NC_State", "UNC", "Notre_Dame",
+         "Pitt", "Syracuse", "UVA", "Virginia_Tech", "Wake_Forest")
+
+big12 <- c("Baylor", "BYU", "Cincinnati", "Houston", "Iowa_State", "Kansas", "Kansas_State", "Oklahoma", "Oklahoma_State", "TCU", "Texas", "Texas_Tech", "UCF", "West_Virginia")
+
+big10 <- c("Illinois", "Indiana", "Iowa", "Maryland", "Michigan", "Michigan_State", "Minnesota", "Nebraska", "Northwestern", "Ohio_State", "Penn_State", "Purdue", "Rutgers", "Wisconsin")
+
+  
+pac12 <- c("Arizona", "Arizona_State","Cal", "Colorado", "Oregon", "Oregon_State", "Stanford", "UCLA", "USC", "Utah",  "Washington", "Washington_St")
+
+sec <- c("Alabama", "Arkansas", "Auburn", "Florida", "Georgia", "Kentucky", "LSU", "Ole_Miss", "Miss_St", "Missouri", "South_Carolina", "Tennessee", "Texas_A&M", "Vanderbilt")
+
+teams <- c(acc, big12, big10, pac12, sec)
+seasons <- c("2019-20", "2020-21", "2022-23", "2023-24")
+```
+
+```{r}
+allData <- data.frame()
+
+for(tmInd in 1:length(teams)) {
+  currTm <- teams[tmInd]
+  print(currTm)
+  for(sznInd in 1:length(seasons)) {
+    currSzn <- seasons[sznInd]
+    
+    print(currSzn)
+    flush.console()
+    
+    currPath <- paste0(starter_path, "/", currSzn, "/", "schedules/", currTm, "_schedule.csv")
+    
+    currData <- read.csv(currPath)
+    currData$team <- currTm
+    
+    allData <- rbind(allData, currData)
+  }
+}
+```
+```{r}
+write.csv(allData, "gameResults.csv", row.names = FALSE)
+```
+
+
+
+
+
+```{r}
+ids <- get_game_ids("Arizona", "2024-25")
+```
+```{r}
+for(i in 1:nrow(ids)) {
+  
+}
+```
+
+
+
+```{r}
+start_date <- as.Date("2019-11-04")
+end_date <- as.Date("2024-04-30")
+
+date_seq <- seq.Date(start_date, end_date, by = "day")
+
+date_strs <- format(date_seq, "%Y-%m-%d")
+
+head(date_strs)
+```
+```{r}
+all_games <- data.frame()
+
+for (i in 1:5) {
+  curr_date <- date_strs[i]
+  
+  date_games <- get_master_schedule(curr_date)
+  
+  all_games <- bind_rows(all_games, date_games)
+}
+```
+
+
+```{r}
+get_master_schedule("2025-03-27")
+```
+
+
+```{r}
+game_shot_chart(game_id = 401746061)
+```
+
