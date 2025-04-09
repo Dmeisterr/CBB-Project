@@ -1,0 +1,95 @@
+---
+title: "Analysis"
+author: "Seth Jernigan"
+date: "2025-04-07"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+dff19Str <- paste0(getwd(), "/data/defense_four_factors_19.csv")
+dff19 <- read.csv(dff19Str)
+```
+
+```{r}
+mergeDataStr <- paste0(getwd(), "/data/merged_data.csv")
+mergeData <- read.csv(mergeDataStr)
+```
+
+```{r}
+p5Conf <- c("SEC", "P12", "ACC", "B10", "B12")
+
+p5Data <- mergeData %>% 
+  filter(Conf %in% p5Conf) %>% 
+  rename(
+    # Four Factors
+    off_eFGPct = eFGPct.y,
+    def_eFGPct = eFGPct.x,
+    off_eFGPct_Rank = RankeFGPct.y,
+    def_eFGPct_Rank = RankeFGPct.x,
+    off_TOPct = TOPct.y,
+    def_TOPct = TOPct.x,
+    off_TOPct_Rank = RankTOPct.y,
+    def_TOPct_Rank = RankTOPct.x,
+    off_ORPct = ORPct.y,
+    def_ORPct = ORPct.x,
+    off_ORPct_Rank = RankORPct.y,
+    def_ORPct_Rank = RankORPct.x,
+    off_FTRate = FTRate.y,
+    def_FTRate = FTRate.x,
+    off_FTRate_Rank = RankFTRate.y,
+    def_FTRate_Rank = RankFTRate.x,
+    
+    # Misc [Offense/Defense]
+    off_FG2Pct = FG2Pct.x,
+    def_FG2Pct = OppFG2Pct.x,
+    off_FG2Pct_Rank = RankFG2Pct.x,
+    def_FG2Pct_Rank = RankOppFG2Pct.x,
+    off_FG3Pct = FG3Pct.x,
+    def_FG3Pct = OppFG3Pct.x,
+    off_FG3Pct_Rank = RankFG3Pct.x,
+    def_FG3Pct_Rank = RankOppFG3Pct.x,
+    off_FTPct = FTPct.x,
+    def_FTPct = OppFTPct.x,
+    off_FTPct_Rank = RankFTPct.x,
+    def_FTPct_Rank = RankOppFTPct.x,
+    off_BlockPct = BlockPct.x,
+    def_BlockPct = OppBlockPct.x,
+    off_BlockPct_Rank = RankBlockPct.x,
+    def_BlockPct_Rank = RankOppBlockPct.x,
+    off_FG3Rate = FG3Rate.x,
+    def_FG3Rate = OppFG3Rate.x,
+    off_FG3Rate_Rank = RankFG3Rate.x,
+    def_FG3Rate_Rank = RankOppFG3Rate.x,
+    off_ARate = ARate.x,
+    def_ARate = OppARate.x,
+    off_ARate_Rank = RankARate.x,
+    def_ARate_Rank = RankOppARate.x,
+    off_StlRate = StlRate.x,
+    def_StlRate = OppStlRate.x,
+    off_StlRate_Rank = RankStlRate.x,
+    def_StlRate_Rank = RankOppStlRate.x,
+    off_NSTRate = NSTRate.x,
+    def_NSTRate = OppNSTRate.x,
+    off_NSTRate_Rank = RankNSTRate.x,
+    def_NSTRate_Rank = RankOppNSTRate.x
+  ) %>% 
+  select(-ends_with(".y"))
+```
+
+
+```{r}
+write.csv(p5Data, file = "power5DataCleaned.csv")
+```
+
+
+
+```{r}
+check <- p5Data %>% 
+  select(TeamName, Season, FG2Pct.x, FG2Pct.y)
+```
+
