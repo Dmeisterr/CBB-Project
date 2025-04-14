@@ -27,21 +27,49 @@ Project Goal:
 
 ## Data Collection
 ```{r data-collection}
-data <- read.csv("")
+data <- read.csv("./CBB-Project/src/data/merged_data.csv", na.strings = c("NULL", "NA"))
 head(data)
 ```
 
 ## Data Cleaning
 ```{r data-cleaning}
+
 ```
 
 # Feature Selection
 ```{r feature-selection}
-# Select features for clustering
+features <- data %>%
+    # Select all columns from the dataset
+    select(everything())
+
+features <- data %>%
+  select(tempo_adj, off_eff_adj, def_eff_adj, pos_len_off, pos_len_def) %>%
+  drop_na()
+features_scaled <- scale(features)
+head(features_scaled)
 ```
 
 # Exploratory Data Analysis
 ```{r eda}
+# Summary statistics
+summary(features)
+
+# Correlation matrix
+cor_matrix <- cor(features)
+print(cor_matrix)
+
+# Visualize distributions
+features_long <- features %>%
+  pivot_longer(everything(), names_to = "feature", values_to = "value")
+
+ggplot(features_long, aes(x = value)) +
+  facet_wrap(~feature, scales = "free") +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  theme_minimal() +
+  labs(title = "Feature Distributions")
+
+# Pairwise scatterplots
+pairs(features, main = "Scatterplot Matrix of Features")
 ```
 
 # Clustering Analysis
