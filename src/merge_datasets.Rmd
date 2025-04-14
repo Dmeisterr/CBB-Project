@@ -79,23 +79,23 @@ point_dist_24 <- read_csv("data/pointdist24.csv", na = c("NULL"))
 # Clean eff_tempo datasets
 
 # # add year column
-# eff_tempo_19 <- eff_tempo_19 %>%
-#   mutate(Year = 2019)
+eff_tempo_19 <- eff_tempo_19 %>%
+  mutate(Year = 2019)
 
-# eff_tempo_20 <- eff_tempo_20 %>%
-#   mutate(Year = 2020)
+eff_tempo_20 <- eff_tempo_20 %>%
+  mutate(Year = 2020)
 
-# eff_tempo_21 <- eff_tempo_21 %>%
-#   mutate(Year = 2021)
+eff_tempo_21 <- eff_tempo_21 %>%
+  mutate(Year = 2021)
 
-# eff_tempo_22 <- eff_tempo_22 %>%
-#   mutate(Year = 2022)
+eff_tempo_22 <- eff_tempo_22 %>%
+  mutate(Year = 2022)
 
-# eff_tempo_23 <- eff_tempo_23 %>%
-#   mutate(Year = 2023)
+eff_tempo_23 <- eff_tempo_23 %>%
+  mutate(Year = 2023)
 
-# eff_tempo_24 <- eff_tempo_24 %>%
-#   mutate(Year = 2024)
+eff_tempo_24 <- eff_tempo_24 %>%
+  mutate(Year = 2024)
 
 # remove quotes from TeamName entries
 eff_tempo_19$TeamName <- gsub("\"", "", eff_tempo_19$TeamName)
@@ -144,18 +144,18 @@ eff_tempo_24$TeamName <- gsub("[0-9]", "", eff_tempo_24$TeamName)
 #   rename(Season = Year)
 
 # remove Team column
-eff_tempo_19 <- eff_tempo_19 %>%
-  select(-Team)
-eff_tempo_20 <- eff_tempo_20 %>%
-  select(-Team)
-eff_tempo_21 <- eff_tempo_21 %>%
-  select(-Team)
-eff_tempo_22 <- eff_tempo_22 %>%
-  select(-Team)
-eff_tempo_23 <- eff_tempo_23 %>%
-  select(-Team)
-eff_tempo_24 <- eff_tempo_24 %>%
-  select(-Team)
+# eff_tempo_19 <- eff_tempo_19 %>%
+#   select(-Team)
+# eff_tempo_20 <- eff_tempo_20 %>%
+#   select(-Team)
+# eff_tempo_21 <- eff_tempo_21 %>%
+#   select(-Team)
+# eff_tempo_22 <- eff_tempo_22 %>%
+#   select(-Team)
+# eff_tempo_23 <- eff_tempo_23 %>%
+#   select(-Team)
+# eff_tempo_24 <- eff_tempo_24 %>%
+#   select(-Team)
 
 # rewrite csv files
 write_csv(eff_tempo_19, "data/eff_tempo_19.csv")
