@@ -83,13 +83,24 @@ p5Data <- mergeData %>%
 
 
 ```{r}
-write.csv(p5Data, file = "power5DataCleaned.csv")
-```
+pca_data <- p5Data %>% 
+  select(-TeamName, -Conf, -seed) %>% 
+  select(-ends_with("Rank")) %>% 
+  select(-starts_with("Rank"))
 
+```
 
 
 ```{r}
-check <- p5Data %>% 
-  select(TeamName, Season, FG2Pct.x, FG2Pct.y)
+# Run PCA for variable selection...
+
+pca_result <- prcomp(pca_data, center = TRUE, scale. = TRUE)
+
+summary(pca_result)
 ```
+```{r}
+View(p5Data[which(is.na(p5Data$Tempo)),])
+```
+
+
 
