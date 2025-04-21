@@ -16,6 +16,7 @@ library(tidyverse)
 library(cluster)       # For clustering
 library(factoextra)    # For visualizing clusters
 library(ggplot2)       # For data visualization
+library(dplyr)        # For data manipulation
 ```
 
 # Introduction
@@ -38,55 +39,156 @@ head(data)
 
 # Feature Selection
 ```{r feature-selection}
-features <- data %>%
-    # Select all columns from the dataset
-    select(everything())
 
-features <- data %>%
-  select(tempo_adj, off_eff_adj, def_eff_adj, pos_len_off, pos_len_def) %>%
-  drop_na()
-features_scaled <- scale(features)
-head(features_scaled)
 ```
 
+# PCA
+```{r pca}
+# 1. Select only numeric columns for PCA
+numeric_features <- data %>%
+  select(where(is.numeric)) %>%
+
+# Select only complete numeric columns suitable for PCA
+# Focus on key basketball metrics and avoid identifiers or categorical variables
+
+# First, identify numeric columns
+numeric_cols <- sapply(data, is.numeric)
+numeric_data <- data[, numeric_cols]
+
+# Remove columns with too many missing values (optional threshold)
+missing_pct <- colMeans(is.na(numeric_data))
+good_cols <- names(missing_pct[missing_pct < 0.1])  # Keep columns with <10% missing values
+numeric_data <- numeric_data[, good_cols]
+
+# Now handle remaining NAs with imputation
+# For simplicity, use median imputation, but consider more sophisticated methods if needed
+numeric_data <- apply(numeric_data, 2, function(x) {
+  x[is.na(x)] <- median(x, na.rm = TRUE)
+  return(x)
+})
+
+# Convert back to data frame
+numeric_data <- as.data.frame(numeric_data)
+
+# Check for and remove any constant columns
+var_cols <- sapply(numeric_data, var, na.rm = TRUE)
+numeric_data <- numeric_data[, var_cols > 0]
+
+# Now perform PCA on the cleaned data
+pca_res <- prcomp(numeric_data, center = TRUE, scale. = TRUE)
+
+# Summary of PCA
+summary(pca_res)
+
+# Scree plot to examine variance explained
+screeplot(pca_res, type = "lines")
+
+# Plot the first two principal components
+biplot(pca_res, scale = 0)
+
+# Alternatively, create a nicer visualization with ggplot2
+pc_data <- as.data.frame(pca_res$x)
+ggplot(pc_data, aes(x = PC1, y = PC2)) +
+  geom_point(alpha = 0.5) +
+  theme_minimal() +
+  labs(title = "PCA of College Basketball Teams",
+       x = paste0("PC1 (", round(summary(pca_res)$importance[2,1]*100, 1), "%)"),
+       y = paste0("PC2 (", round(summary(pca_res)$importance[2,2]*100, 1), "%)"))
+```
 # Exploratory Data Analysis
 ```{r eda}
-# Summary statistics
-summary(features)
 
-# Correlation matrix
-cor_matrix <- cor(features)
-print(cor_matrix)
-
-# Visualize distributions
-features_long <- features %>%
-  pivot_longer(everything(), names_to = "feature", values_to = "value")
-
-ggplot(features_long, aes(x = value)) +
-  facet_wrap(~feature, scales = "free") +
-  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
-  theme_minimal() +
-  labs(title = "Feature Distributions")
-
-# Pairwise scatterplots
-pairs(features, main = "Scatterplot Matrix of Features")
 ```
 
 # Clustering Analysis
 
 ## Determine Optimal Number of Clusters
 ```{r optimal-clusters}
+# Select PCs explaining ~85% of variance (looks like around PC23)
+pc_features <- as.data.frame(pca_res$x[, 1:23])
+
+# Add team names for reference
+pc_features$TeamName <- data$TeamName
+
 # Determine optimal number of clusters
+set.seed(123)  # For reproducibility
+
+# Calculate WSS (Within-cluster Sum of Squares) for different k values
+wss <- function(k) {
+  kmeans(pc_features[, 1:23], k, nstart = 25)$tot.withinss
+}
+
+# Try 1-15 clusters
+k_values <- 1:15
+wss_values <- sapply(k_values, wss)
+
+# Plot WSS vs number of clusters (Elbow method)
+plot(k_values, wss_values, type = "b", 
+     xlab = "Number of Clusters (k)", ylab = "Total Within-cluster Sum of Squares")
+
+# Alternative using factoextra
+# fviz_nbclust(pc_features[, 1:23], kmeans, method = "wss")
+
+# Silhouette method (alternative)
+# fviz_nbclust(pc_features[, 1:23], kmeans, method = "silhouette")
 ```
 
 ## Perform Clustering
 ```{r clustering}
-# Apply K-Means Clustering
+# Perform k-means clustering
+set.seed(123)
+k_optimal <- 3 
+kmeans_result <- kmeans(pc_features[, 1:23], centers = k_optimal, nstart = 25)
+
+# Add cluster assignments to your data
+pc_features$cluster <- kmeans_result$cluster
+data$cluster <- kmeans_result$cluster
 ```
 
 ## Visualize Clusters
 ```{r cluster-visualization}
-# Plot clusters
+# Visualize clusters in PCA space
+fviz_cluster(kmeans_result, data = pc_features[, 1:23],
+             palette = "jco", # Color palette
+             ellipse.type = "convex", # Concentration ellipse
+             ggtheme = theme_minimal(),
+             main = "Cluster Plot")
+
+# Look at characteristics of each cluster
+cluster_summary <- data %>%
+  group_by(cluster) %>%
+  summarize(across(c(eFGPct.x, TOPct.x, ORPct.x, FTRate.x), mean, na.rm = TRUE),
+            count = n(),
+            avg_offensive_rating = mean(AdjOE, na.rm = TRUE),
+            avg_defensive_rating = mean(AdjDE, na.rm = TRUE),
+            avg_tempo = mean(AdjTempo, na.rm = TRUE))
+
+print(cluster_summary)
+```
+
+## Analyze Team Archetypes
+```{r archetype-analysis}
+# Identify distinct team styles within each cluster
+cluster_archetypes <- data %>%
+  group_by(cluster) %>%
+  summarize(
+    # Offensive archetypes
+    tempo = mean(AdjTempo, na.rm = TRUE),
+    shooting_pct = mean(eFGPct.x, na.rm = TRUE),
+    turnover_rate = mean(TOPct.x, na.rm = TRUE),
+    offensive_rebounding = mean(ORPct.x, na.rm = TRUE),
+    free_throw_rate = mean(FTRate.x, na.rm = TRUE),
+    
+    # Defensive archetypes
+    defensive_efficiency = mean(AdjDE, na.rm = TRUE),
+    opp_shooting = mean(OppFG2Pct.x, na.rm = TRUE),
+    forced_turnover_rate = mean(StlRate.x, na.rm = TRUE)
+  )
+
+print(cluster_archetypes)
+
+# Name the clusters based on their characteristics
+# For example: "Fast-paced shooters", "Defensive grinders", etc.
 ```
 
 # Matchup Analysis
