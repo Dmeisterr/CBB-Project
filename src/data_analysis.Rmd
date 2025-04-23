@@ -11,12 +11,25 @@ output:
 
 ```{r setup, include=FALSE}
 # Load necessary libraries and set global options
-knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(cluster)       # For clustering
 library(factoextra)    # For visualizing clusters
 library(ggplot2)       # For data visualization
 library(dplyr)        # For data manipulation
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE, 
+  cache = TRUE,  # Enable caching - critical for large analyses
+  autodep = TRUE # Automatically track dependencies between chunks
+)
+
+# Memory management
+gc(reset = TRUE, full = TRUE)  # Force complete garbage collection 
+
+# For Apple Silicon Macs specifically
+options(future.fork.enable = FALSE)  # Prevent forking issues on M-series
 ```
 
 # Introduction
@@ -46,7 +59,7 @@ head(data)
 ```{r pca}
 # 1. Select only numeric columns for PCA
 numeric_features <- data %>%
-  select(where(is.numeric)) %>%
+  select(where(is.numeric))
 
 # Select only complete numeric columns suitable for PCA
 # Focus on key basketball metrics and avoid identifiers or categorical variables
@@ -122,22 +135,94 @@ wss <- function(k) {
 k_values <- 1:15
 wss_values <- sapply(k_values, wss)
 
-# Plot WSS vs number of clusters (Elbow method)
-plot(k_values, wss_values, type = "b", 
-     xlab = "Number of Clusters (k)", ylab = "Total Within-cluster Sum of Squares")
+# # Plot WSS vs number of clusters (Elbow method)
+# plot(k_values, wss_values, type = "b", 
+#      xlab = "Number of Clusters (k)", ylab = "Total Within-cluster Sum of Squares")
 
 # Alternative using factoextra
 # fviz_nbclust(pc_features[, 1:23], kmeans, method = "wss")
 
-# Silhouette method (alternative)
-# fviz_nbclust(pc_features[, 1:23], kmeans, method = "silhouette")
+# # Silhouette method (alternative)
+# library(cluster)
+# # Test clustering quality across different numbers of PCs
+# max_d <- 30    # Maximum number of PCs to test
+# sil_scores <- numeric(max_d - 1)
+
+# for (d in 2:max_d) {
+#   km <- kmeans(pca_res$x[, 1:d], centers = 4, nstart = 25)
+#   sil <- silhouette(km$cluster, dist(pca_res$x[, 1:d]))
+#   sil_scores[d-1] <- mean(sil[,3])
+# }
+
+# # Plot silhouette score vs number of PCs
+# plot(2:max_d, sil_scores, type="b", pch=19,
+#      xlab="Number of PCs used", ylab="Average silhouette width",
+#      main="Clustering Quality vs Dimensionality")
+# abline(v=which.max(sil_scores)+1, col="red", lty=2)
+# text(which.max(sil_scores)+1, min(sil_scores), 
+#      paste("Best:", which.max(sil_scores)+1), pos=4, col="red")
+
+# # Hopkins statistic (optional)
+# library(clustertend)
+
+# # Test clusterability at different dimensions
+# hopkins_scores <- numeric(max_d)
+
+# for (d in 1:max_d) {
+#   # Set seed for reproducibility
+#   set.seed(123)
+#   hopkins_scores[d] <- hopkins(pca_res$x[, 1:d], n = nrow(pca_res$x) * 0.1)
+# }
+
+# # Plot Hopkins statistic
+# plot(1:max_d, hopkins_scores, type="b", pch=19,
+#      xlab="Number of PCs", ylab="Hopkins Statistic",
+#      main="Clusterability vs Dimensionality")
+# abline(h=0.5, col="red", lty=2)
+
+# cross-validated cluster stability
+# Function to measure cluster stability
+measure_stability <- function(d, k=4) {
+  # Split data with manageable sample size
+  set.seed(123)
+  n <- nrow(pca_res$x)
+  sample_size <- min(n/2, 500)  # Cap sample size
+  idx <- sample(1:n, sample_size)
+  
+  # Only extract needed dimensions once
+  data_subset <- pca_res$x[, 1:d]
+  data1 <- data_subset[idx, , drop=FALSE]
+  data2 <- data_subset[-idx[1:length(idx)], , drop=FALSE]
+  
+  # Cluster both halves
+  km1 <- kmeans(data1, centers=k, nstart=25)
+  km2 <- kmeans(data2, centers=k, nstart=25)
+  
+  # More efficient distance calculation
+  centers <- km1$centers
+  distances <- matrix(0, nrow=k, ncol=nrow(data2))
+  for(i in 1:k) {
+    for(j in 1:nrow(data2)) {
+      distances[i,j] <- sum((centers[i,] - data2[j,])^2)
+    }
+  }
+  assign2 <- apply(distances, 2, which.min)
+  
+  # Free memory
+  rm(data1, data2, distances, centers)
+  gc(full=TRUE)
+  
+  # Measure agreement
+  agreement <- mean(assign2 == km2$cluster)
+  return(agreement)
+}
 ```
 
 ## Perform Clustering
 ```{r clustering}
 # Perform k-means clustering
 set.seed(123)
-k_optimal <- 3 
+k_optimal <- 4
 kmeans_result <- kmeans(pc_features[, 1:23], centers = k_optimal, nstart = 25)
 
 # Add cluster assignments to your data
