@@ -10,16 +10,13 @@ library(tidyverse)
 library(ggplot2)
 ```
 
-```{r}
-dff19Str <- paste0(getwd(), "/data/defense_four_factors_19.csv")
-dff19 <- read.csv(dff19Str)
-```
-
+### Read in Data
 ```{r}
 mergeDataStr <- paste0(getwd(), "/data/merged_data.csv")
 mergeData <- read.csv(mergeDataStr)
 ```
 
+### Filter Data to Power 5, Rename Columns
 ```{r}
 p5Conf <- c("SEC", "P12", "ACC", "B10", "B12")
 
@@ -81,25 +78,468 @@ p5Data <- mergeData %>%
   select(-ends_with(".y"))
 ```
 
-
+### Narrow in Data for PCA/K Means Clustering
 ```{r}
 pca_data <- p5Data %>% 
-  select(-TeamName, -Conf, -seed) %>% 
+  select(-Conf, -seed) %>% 
   select(-ends_with("Rank")) %>% 
-  select(-starts_with("Rank"))
+  select(-starts_with("Rank")) %>% 
+  select(-DFP.x) %>% 
+  select(-ends_with("rk"))
 
 ```
 
+### Develop Offensive Data Frame
+```{r}
+offensiveData <- pca_data %>% 
+  select(
+    # Team Identification
+    TeamName,
+    Season,
+    
+    # Eff_Tempo
+    tempo_raw,
+    pos_len_off,
+    off_eff_raw,
+    
+    # misc_offense
+    off_FG2Pct,
+    off_FG3Pct,
+    off_FTPct,
+    off_BlockPct,
+    off_FG3Rate,
+    off_ARate,
+    off_StlRate,
+    off_NSTRate,
+    
+    # height
+    
+    Hgt1,
+    Hgt2,
+    Hgt3,
+    Hgt4,
+    Hgt5,
+    HgtEff,
+    Exp,
+    Bench,
+    Pts1,
+    Pts2,
+    Pts3,
+    Pts4,
+    Pts5,
+    OR1,
+    OR2,
+    OR3,
+    OR4,
+    OR5,
+    
+    # points dist
+    Off_1,
+    Off_2,
+    Off_3,
+    
+    # four factors
+    off_eFGPct,
+    off_TOPct,
+    off_ORPct,
+    off_FTRate
+  )
+```
 
+### Create Minimized Offensive Dataset (non-individual player statistics)
+```{r}
+# Minimized Offensive Data Frame
+offensiveDataMin <- pca_data %>% 
+  select(
+    # Eff_Tempo
+    tempo_raw,
+    pos_len_off,
+    off_eff_raw,
+    
+    # misc_offense
+    off_FG2Pct,
+    off_FG3Pct,
+    off_FTPct,
+    off_BlockPct,
+    off_FG3Rate,
+    off_ARate,
+    off_StlRate,
+    off_NSTRate,
+    
+    # height
+    
+    HgtEff,
+    Exp,
+    Bench,
+    
+    # points dist
+    Off_1,
+    Off_2,
+    Off_3,
+    
+    # four factors
+    off_eFGPct,
+    off_TOPct,
+    off_ORPct,
+    off_FTRate
+  )
+```
+
+### Run PCA on offensive data
 ```{r}
 # Run PCA for variable selection...
 
-pca_result <- prcomp(pca_data, center = TRUE, scale. = TRUE)
+offensivePcaData <- offensiveData %>% select(-TeamName, -Season)
+
+pca_result <- prcomp(offensivePcaData, center = TRUE, scale. = TRUE)
 
 summary(pca_result)
 ```
+
+### Run K Means Clustering varying k to select using Elbow Method
 ```{r}
-View(p5Data[which(is.na(p5Data$off_NSTRate)),])
+# Run K Means clustering for k = 1:n to produce elbow plot for number of cluster selection
+
+set.seed(123)
+
+n <- 25
+
+offensiveDataCluster <- offensiveData %>% select(-TeamName, -Season)
+off_scaled_cluster <- scale(offensiveDataCluster) %>% as.data.frame()
+
+off_scaled <- bind_cols(
+  offensiveData %>% select(TeamName, Season),
+  off_scaled_cluster
+)
+
+wss <- numeric(n)
+
+for (k in 1:n){
+  km <- kmeans(off_scaled_cluster, centers = k, nstart = 20)
+  
+  wss[k] <- km$tot.withinss
+}
+
+wss_df <- tibble(clusters = 1:n, wss = wss)
+
+elbow_plot <- ggplot(wss_df, aes(x = clusters, y = wss, group = 1))+
+  geom_point(size = 2)+
+  geom_line()+
+  scale_x_continuous(breaks = seq(2, n, 2)) +
+  xlab('Number of Clusters')+
+  geom_hline(
+    yintercept = wss,
+    linetype = 'dashed'
+  )
+
+elbow_plot
+```
+
+
+### Run K-Means with selected k (centers), label observations w/ clusters
+```{r}
+km14 <- kmeans(off_scaled_cluster, centers = 14, nstart = 20)
+
+
+offensiveData$FullCluster <- as.factor(km14$cluster)
+
+off_scaled_df <- as.data.frame(off_scaled)
+off_scaled_df$FullCluster <- as.factor(km14$cluster)
+```
+
+
+### Full Process: Variance Reduction Analysis for I.D. of Important Cluster Features
+If there is a large variance reduction of a feature from the variance of that feature throughout all observations to the variance of the feature within a cluster, then we define that statistic to be a 'substantially variance reducing feature'.
+
+```{r, fig.height=6}
+clusterN <- 1
+
+# Step 1: Grab a single clusters data
+clusterNScaled <- off_scaled_df %>% 
+  filter(FullCluster == clusterN) %>% 
+  select(-FullCluster, -TeamName, -Season)
+
+# Step 2: Calculate Centered Variance for each feature
+cNVar <- 1 - sapply(clusterNScaled, var)
+
+# Step 3: Sort the variances
+cNVar_sorted <- sort(cNVar, decreasing = FALSE)
+
+# Step 4: Convert to data frame for plotting
+var_df <- data.frame(
+  feature = factor(names(cNVar_sorted), levels = names(cNVar_sorted)),
+  variance = as.numeric(cNVar_sorted)
+)
+
+# Step 5: Plot in Decreasing variance reduction
+ggplot(var_df, aes(x = feature, y = variance)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  theme_minimal() +
+  ylab("Variance") +
+  xlab("Feature") +
+  ggtitle(paste("Feature Variance Decreases (Cluster", clusterN, ")", sep = " "))+
+  scale_y_continuous(labels = scales::comma) +
+  coord_flip() +
+  theme(
+    axis.text.y = element_text(
+      size = 10,
+      angle = 0,
+      hjust = 0,
+      vjust = 0.5,
+      margin = margin(b = 15)
+    ),
+    axis.text.x = element_text(angle = 0, hjust = 1) # Ensure x-axis labels are readable
+  )
+```
+
+### Compare Each Avg. Stat within Cluster to All Data Stats
+```{r}
+var_df_sorted <- var_df %>% 
+  arrange(-variance) %>% 
+  filter(variance > 0)
+
+var_reduced_stats <- var_df_sorted$feature
+
+# Can change this to use offensiveData (for true values) and off_scaled_df (for normalized values)
+var_reduced_values <- off_scaled_df %>% 
+  select(all_of(var_reduced_stats), FullCluster)
+
+clusterNValues <- var_reduced_values %>% 
+  filter(FullCluster == clusterN)
+
+nonClusterNValues <- var_reduced_values %>% 
+  filter(FullCluster != clusterN)
+
+clusterNAvgs <- clusterNValues %>% 
+  group_by(FullCluster) %>% 
+  summarise(
+    across(everything(), mean, na.rm = TRUE)
+  )
+
+nonClusterNAvgs <- nonClusterNValues %>% 
+  summarise(
+    across(-FullCluster, mean, na.rm = TRUE)
+  )
+
+variance_reductions <- as.data.frame(t(setNames(var_df_sorted$variance, var_df_sorted$feature)))
+
+clusterNTitle <- paste("Cluster", clusterN, sep = " ")
+nonClusterNTitle <- paste("Non Cluster", clusterN, sep = " ")
+
+comparisonTable <- bind_rows(
+  clusterNAvgs %>% select(-FullCluster) %>% mutate(Type = clusterNTitle),
+  nonClusterNAvgs %>% mutate(Type = nonClusterNTitle),
+  variance_reductions %>% mutate(Type = "Variance Reduction")
+) %>% 
+select(Type, everything())
+
+difference_row <- comparisonTable %>%
+  filter(Type == clusterNTitle) %>%
+  select(-Type) %>%
+  as.data.frame() %>%
+  `-`(comparisonTable %>% filter(Type == nonClusterNTitle) %>% select(-Type) %>% as.data.frame())
+
+comparisonTable <- bind_rows(
+  comparisonTable,
+  difference_row %>% mutate(Type = "Difference")
+) %>% 
+  mutate(across(where(is.numeric), ~ round(.x, 2)))
+
+comparisonTable
+
+```
+
+### Difference in Means Hypothesis Tests
+Set Significance Level = 0.1
+
+We define a feature (statistic) as a **'defining feature'** of a cluster if the feature is a 'substantial variance reducing feature' with a statistically significance difference in means between the data for that feature within that cluster, and the data for that feature for all other clusters.
+```{r}
+var_df_sorted <- var_df %>% 
+  arrange(-variance) %>% 
+  filter(variance > 0)
+
+var_reduced_stats <- var_df_sorted$feature
+
+var_reduced_values <- offensiveData %>% 
+  select(all_of(var_reduced_stats), FullCluster)
+
+clusterNData <- var_reduced_values %>% 
+  filter(FullCluster == clusterN)
+
+notClusterNData <- var_reduced_values %>% 
+  filter(FullCluster != clusterN)
+
+var_reduced_values <- var_reduced_values %>% 
+  select(-FullCluster)
+
+hypTestsResults <- data.frame(
+  feature = character(),
+  p_value = numeric(),
+  t_stat = numeric(),
+  stringsAsFactors = FALSE
+)
+
+for (feature in var_reduced_stats) {
+  # Get the data for the feature
+  clusterN_values <- clusterNData[[feature]]
+  notClusterN_values <- notClusterNData[[feature]]
+  
+  # Perform a t-test
+  t_test_result <- t.test(clusterN_values, notClusterN_values)
+  
+  # Store the result (Feature, p-value, t-statistic)
+  hypTestsResults <- hypTestsResults %>%
+    add_row(
+      feature = feature,
+      p_value = round(t_test_result$p.value, 3),
+      t_stat = round(t_test_result$statistic, 2)
+    )
+}
+
+print(hypTestsResults)
+```
+
+### Curate data for polygon plot
+```{r}
+# Should use off_scaled_df above to make comparisonTable for this step!
+comparison_data_long <- comparisonTable %>%
+  filter(Type != "Variance Reduction", Type != "Difference") %>%
+  pivot_longer(cols = -Type, names_to = "Feature", values_to = "Value") %>%
+  mutate(
+    Group = case_when(
+      Type == clusterNTitle ~ clusterNTitle,
+      Type == nonClusterNTitle ~ nonClusterNTitle
+    ),
+    Feature = factor(Feature, levels = var_reduced_stats)  # Ensure proper ordering of features
+  ) %>% 
+  select(-Type)
+
+# Check the structure
+head(comparison_data_long)
+```
+
+### Plot Polygon Plot for Visual Comparison
+```{r, fig.height=7}
+ggplot(comparison_data_long, aes(x = Feature, y = Value, group = Group, color = Group)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  coord_polar(start = 0) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = -1,
+      vjust = -1,
+      margin = margin(t = 10)
+    ),
+    plot.margin = margin(10, 10, 10, 10),
+    legend.position = "top"
+  ) +
+  labs(
+    title = paste("Comparison of Cluster", clusterN, "vs Non Cluster", clusterN, "Features", sep = " "),
+    subtitle = "Polygon Plot (Radar/Spider Chart)",
+    x = "Features",
+    y = "Values"
+  )
+```
+
+### List Teams in this Cluster
+```{r}
+teamsClusterN <- offensiveData %>% 
+  filter(FullCluster == clusterN) %>% 
+  select(TeamName, Season)
+
+teamsClusterN
+```
+
+
+
+
+
+
+
+
+
+
+
+
+### Save Variance Reduction Plots for all Clusters to a PDF
+```{r}
+# Open a PDF device to save all the plots
+pdf("cluster_variances.pdf", width = 8, height = 10)
+
+# Loop through clusterN from 1 to 14
+for (clusterN in 1:14) {
+  
+  # Step 1: Grab a single cluster's data
+  clusterNScaled <- off_scaled_df %>% 
+    filter(FullCluster == clusterN) %>% 
+    select(-FullCluster)
+  
+  # Step 2: Calculate Centered Variance for each feature
+  cNVar <- 1 - sapply(clusterNScaled, var)
+  
+  # Step 3: Sort the variances
+  cNVar_sorted <- sort(cNVar, decreasing = FALSE)
+  
+  # Step 4: Convert to data frame for plotting
+  var_df <- data.frame(
+    feature = factor(names(cNVar_sorted), levels = names(cNVar_sorted)),
+    variance = as.numeric(cNVar_sorted)
+  )
+  
+  # Step 5: Plot the variances for this cluster
+  p <- ggplot(var_df, aes(x = feature, y = variance)) +
+    geom_bar(stat = "identity", fill = "skyblue") +
+    theme_minimal() +
+    ylab("Variance") +
+    xlab("Feature") +
+    ggtitle(paste("Feature Variances Decreases (Cluster", clusterN, ")")) +
+    scale_y_continuous(labels = scales::comma) +
+    coord_flip() +
+    theme(
+      axis.text.y = element_text(
+        size = 10,                    # Label text size
+        angle = 0,                    # No rotation
+        hjust = 0,                    # Align to the left
+        vjust = 0.5,                  # Center vertically
+        margin = margin(b = 15)       # Increase space between labels
+      ),
+      axis.text.x = element_text(angle = 0, hjust = 1) # Ensure x-axis labels are readable
+    )
+  
+  # Print the plot to the PDF
+  print(p)
+}
+
+# Close the PDF device
+dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+cum_pve <- summary(pca_result)$importance[3, ]
+
+plot(cum_pve, type = "b",
+     xlab = "Principal Component",
+     ylab = "Cumulative Proportion of Variance Explained",
+     main = "Cumulative Variance Explained")
+
 ```
 
 
