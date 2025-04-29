@@ -37,7 +37,8 @@ height21 <- read_csv("data/height21.csv", na = c("NULL"))
 height22 <- read_csv("data/height22.csv", na = c("NULL"))
 height23 <- read_csv("data/height23.csv", na = c("NULL"))
 height24 <- read_csv("data/height24.csv", na = c("NULL"))
-
+```
+```{r}
 kp_19 <- read_csv("data/kpratings_19_pt.csv", na = c("NULL"))
 kp_20 <- read_csv("data/kpratings_20_pt.csv", na = c("NULL"))
 kp_21 <- read_csv("data/kpratings_21_pt.csv", na = c("NULL"))
@@ -51,7 +52,8 @@ misc_def_21 <- read_csv("data/misc_defense_21.csv", na = c("NULL"))
 misc_def_22 <- read_csv("data/misc_defense_22.csv", na = c("NULL"))
 misc_def_23 <- read_csv("data/misc_defense_23.csv", na = c("NULL"))
 misc_def_24 <- read_csv("data/misc_defense_24.csv", na = c("NULL"))
-
+```
+```{r}
 misc_offense_19 <- read_csv("data/misc_offense_19.csv", na = c("NULL"))
 misc_offense_20 <- read_csv("data/misc_offense_20.csv", na = c("NULL"))
 misc_offense_21 <- read_csv("data/misc_offense_21.csv", na = c("NULL"))
@@ -65,7 +67,8 @@ offense_21 <- read_csv("data/offense_four_factors_21.csv", na = c("NULL"))
 offense_22 <- read_csv("data/offense_four_factors_22.csv", na = c("NULL"))
 offense_23 <- read_csv("data/offense_four_factors_23.csv", na = c("NULL"))
 offense_24 <- read_csv("data/offense_four_factors_24.csv", na = c("NULL"))
-
+```
+```{r}
 point_dist_19 <- read_csv("data/pointdist19.csv", na = c("NULL"))
 point_dist_20 <- read_csv("data/pointdist20.csv", na = c("NULL"))
 point_dist_21 <- read_csv("data/pointdist21.csv", na = c("NULL"))
