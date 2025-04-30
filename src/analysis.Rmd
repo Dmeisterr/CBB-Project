@@ -8,6 +8,7 @@ output: pdf_document
 ```{r}
 library(tidyverse)
 library(ggplot2)
+library(gridExtra)
 ```
 
 ### Read in Data
@@ -84,13 +85,6 @@ p5Data <- mergeData %>%
     def_NSTRate_Rank = RankOppNSTRate.x
   ) %>% 
   select(-ends_with(".y"))
-```
-
-```{r}
-az2 <- p5Data %>% 
-  filter(TeamName == "Arizona")
-
-View(az2)
 ```
 
 
@@ -471,7 +465,7 @@ off_scaled_df$FullCluster <- as.factor(km14$cluster)
 ### Make PDF Full of Offensive Outputs for each cluster
 ```{r}
 # Open a PDF before the loop
-pdf("offense_clusters_summary.pdf", width = 11, height = 8.5)  # Landscape
+pdf("offense_clusters_summary.pdf", width = 11, height = 14)  # Landscape
 
 for (clusterN in 1:k) {
   
@@ -612,13 +606,6 @@ defensiveDataMin$FullCluster <- as.factor(km14$cluster)
 
 def_scaled_df <- as.data.frame(def_scaled)
 def_scaled_df$FullCluster <- as.factor(km14$cluster)
-```
-
-```{r}
-az <- defensiveDataMin %>% 
-  filter(TeamName == "Arizona")
-
-View(az)
 ```
 
 
