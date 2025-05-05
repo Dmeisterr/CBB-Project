@@ -373,7 +373,7 @@ area_fill = TRUE, central_distance = 0.2, axis_name_offset = 0.2, grid.min = 0, 
 ```
 
 ```{r, fig.height=7}
-radarData <- makeCompTable(1, off_scaled_df) %>% 
+radarData <- makeCompTable(1, offensiveDataMin) %>% 
   filter(Type %in% c("Cluster 1", "Non Cluster 1")) %>% 
   rename(group = Type)
 
@@ -549,7 +549,7 @@ elbow_plot
 
 ### Run K-Means with selected k (centers), label observations w/ clusters
 ```{r}
-k <- 10
+k <- 8
 
 set.seed(123)
 km14 <- kmeans(off_scaled_cluster, centers = k, nstart = 20)
@@ -564,7 +564,7 @@ off_scaled_df$FullCluster <- as.factor(km14$cluster)
 ### Make PDF Full of Offensive Outputs for each cluster
 ```{r}
 # Open a PDF before the loop
-pdf("offense_clusters_summary.pdf", width = 11, height = 14)  # Landscape
+pdf("offense_clusters_summary.pdf", width = 11, height = 24)  # Landscape
 
 for (clusterN in 1:k) {
   
