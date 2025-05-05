@@ -9,19 +9,15 @@ output: pdf_document
 library(tidyverse)
 library(ggplot2)
 library(gridExtra)
+library(fmsb)
+library(tibble)
+library(purrr)
 ```
 
 ### Read in Data
 ```{r}
 mergeDataStr <- paste0(getwd(), "/data/merged_data.csv")
 mergeData <- read.csv(mergeDataStr)
-```
-
-```{r}
-az2 <- mergeData %>% 
-  filter(TeamName == "Arizona")
-
-View(az2)
 ```
 
 
@@ -289,6 +285,104 @@ diffMeansHt <- function(clusterN, originalData, scaled_df){
 }
 ```
 
+
+
+
+
+
+```{r, fig.height=20}
+## Credit: https://towardsdatascience.com/how-to-make-a-spider-chart-in-r-using-ggplot2-85a4f1898cab/
+
+ggspider <- function(p_data, legend_title = "Group", background_color = "gray97", 
+area_fill = TRUE, central_distance = 0.2, axis_name_offset = 0.2, grid.min = 0, grid.max = 1){
+
+  circle_coords <- function(r, n_axis = ncol(p_data) - 1){
+    fi <- seq(0, 2*pi, (1/n_axis)*2*pi) + pi/2
+    x <- r*cos(fi)
+    y <- r*sin(fi)
+  
+    tibble(x, y, r)
+  }
+
+  (step_1 <- map_df(seq(0, 1, 0.25) + central_distance, circle_coords) %>%
+      ggplot(aes(x, y)) +
+      geom_polygon(data = circle_coords(1 + central_distance), alpha = 1, fill = background_color) +
+      geom_path(aes(group = r), lty = 2, alpha = 0.5) +
+      theme_void())
+
+  axis_coords <- function(n_axis){
+    fi <- seq(0, (1 - 1/n_axis)*2*pi, (1/n_axis)*2*pi) + pi/2
+    x1 <- central_distance*cos(fi)
+    y1 <- central_distance*sin(fi)
+    x2 <- (1 + central_distance)*cos(fi)
+    y2 <- (1 + central_distance)*sin(fi)
+  
+    tibble(x = c(x1, x2), y = c(y1, y2), id = rep(1:n_axis, 2))
+  }
+
+  text_data <- p_data %>%
+    select(-group) %>%
+    map_df(~ grid.min + (grid.max - grid.min) * seq(0, 1, 0.25)) %>%
+    mutate(r = seq(0, 1, 0.25)) %>%
+    pivot_longer(-r, names_to = "parameter", values_to = "value")
+
+  text_coords <- function(r, n_axis = ncol(p_data) - 1){
+    fi <- seq(0, (1 - 1/n_axis)*2*pi, (1/n_axis)*2*pi) + pi/2 + 0.01*2*pi/r
+    x <- r*cos(fi)
+    y <- r*sin(fi)
+  
+    tibble(x, y, r = r - central_distance)
+  }
+
+  labels_data <- map_df(seq(0, 1, 0.25) + central_distance, text_coords) %>%
+    bind_cols(text_data %>% select(-r))
+
+  rescaled_coords <- function(r, n_axis){
+    fi <- seq(0, 2*pi, (1/n_axis)*2*pi) + pi/2
+    tibble(r, fi) %>% mutate(x = r*cos(fi), y = r*sin(fi)) %>% select(-fi)
+  }
+
+  rescaled_data <- p_data %>% 
+    mutate(across(-group, ~ (.x - grid.min) / (grid.max - grid.min))) %>%
+    mutate(copy = pull(., 2)) %>%
+    pivot_longer(-group, names_to = "parameter", values_to = "value") %>%
+    group_by(group) %>%
+    mutate(coords = rescaled_coords(value + central_distance, ncol(p_data) - 1)) %>%
+    unnest()
+  
+  step_1 + 
+    geom_line(data = axis_coords(ncol(p_data) - 1), 
+              aes(x, y, group = id), alpha = 0.3) +
+    geom_point(data = rescaled_data, 
+              aes(x, y, group = group, col = group), size = 3) +
+    geom_path(data = rescaled_data, 
+              aes(x, y, group = group, col = group), size = 1) +
+    {if(area_fill == TRUE) geom_polygon(data = rescaled_data, 
+                            aes(x, y, group = group, 
+                                col = group, fill = group), 
+                                size = 1, alpha = 0.05, show.legend = FALSE)} +
+    geom_text(data = labels_data, 
+                     aes(x, y, label = value), alpha = 0.65) +
+    geom_text(data = text_coords(1 + central_distance + axis_name_offset), 
+              aes(x, y), label = labels_data$parameter[1:(ncol(p_data)-1)]) +
+    labs(col = legend_title) +
+    theme(legend.position = "bottom",
+          legend.text = element_text(size = 12),
+          legend.title = element_text(size = 12))
+}
+```
+
+```{r, fig.height=7}
+radarData <- makeCompTable(1, off_scaled_df) %>% 
+  filter(Type %in% c("Cluster 1", "Non Cluster 1")) %>% 
+  rename(group = Type)
+
+ggspider(radarData, grid.min = -2, grid.max = 2)
+```
+
+
+
+
 ```{r, fig.height=7}
 makePolyPlot <- function(clusterN, scaled_df) {
   # Make Polygon Plot for visual in cluster vs. out of cluster comparison
@@ -344,6 +438,11 @@ makePolyPlot <- function(clusterN, scaled_df) {
   return(def_poly_plot)
 }
 ```
+
+```{r}
+makePolyPlot(1, off_scaled_df)
+```
+
 
 
 ```{r}
@@ -659,6 +758,192 @@ for (clusterN in 1:k) {
 }
 ```
 
+
+
+
+### Performance Over Expectation Analysis
+
+```{r}
+netratings_19 <- read.csv("data/kpratings_19_pt.csv") %>% select(TeamName, Season, AdjEM)
+netratings_20 <- read.csv("data/kpratings_20_pt.csv") %>% select(TeamName, Season, AdjEM)
+netratings_21 <- read.csv("data/kpratings_21_pt.csv") %>% select(TeamName, Season, AdjEM)
+netratings_22 <- read.csv("data/kpratings_22_pt.csv") %>% select(TeamName, Season, AdjEM)
+netratings_23 <- read.csv("data/kpratings_23_pt.csv") %>% select(TeamName, Season, AdjEM)
+netratings_24 <- read.csv("data/kpratings_24_pt.csv") %>% select(TeamName, Season, AdjEM)
+
+netratings_all <- rbind(netratings_19, netratings_20, netratings_21,
+                        netratings_22, netratings_23, netratings_24)
+
+gamesData <- read.csv("data/gameResults.csv")
+gamesData$date <- as.Date(gamesData$date)
+gamesData$month <- as.numeric(format(gamesData$date, "%m"))
+gamesData$year <- as.numeric(format(gamesData$date, "%Y"))
+gamesData$season <- ifelse(gamesData$month %in% 1:4, gamesData$year - 1, gamesData$year)
+gamesData <- na.omit(gamesData)
+```
+
+
+```{r}
+teamConversions <- c(
+  "Arizona_St." = "Arizona_State",
+  "California" = "Cal",
+  "Florida_St." = "Florida_State",
+  "Iowa_St." = "Iowa_State",
+  "Kansas_St." = "Kansas_State",
+  "Miami_FL" = "Miami",
+  "Michigan_St." = "Michigan_State",
+  "Mississippi" = "Ole_Miss",
+  "Mississippi_St." = "Miss_State",
+  "N.C._State" = "NC_State",
+  "North_Carolina" = "UNC",
+  "Ohio_St." = "Ohio_State",
+  "Oklahoma_St." = "Oklahoma_State",
+  "Oregon_St." = "Oregon_State",
+  "Pittsburgh" = "Pitt",
+  "Penn_St." = "Penn_State",
+  "Washington_St." = "Washington_State",
+  "Virginia" = "UVA"
+)
+
+```
+
+
+```{r}
+getTeamRating <- function(teamName, season, netratings) {
+  ratingRow <- netratings %>% 
+    filter(TeamName == teamName, Season == season)
+  
+  return(ratingRow$AdjEM)
+}
+
+getMarginOverExpected <- function(teamName, opponentName, gameSeason, netratings, gamesData) {
+  underscoreTeam <- gsub(" ", "_", teamName)
+  underscoreTeam <- recode(underscoreTeam, !!!teamConversions)
+  
+  gameRow <- gamesData %>% 
+    filter(team == underscoreTeam, opponent == opponentName, season == gameSeason)
+  
+  if(nrow(gameRow) == 0) {
+    errStr <- paste("ERROR: Couldn't find game between", teamName, " and ", opponentName, " season ", gameSeason)
+    print(errStr)
+    return(NA)
+  }
+  
+  teamRtg <- getTeamRating(teamName, gameSeason, netratings)
+  oppRtg <- getTeamRating(opponentName, gameSeason, netratings)
+  
+  margins <- c()
+  for(i in 1:nrow(gameRow)){
+    teamScore <- gameRow$team_score[i]
+    oppScore <- gameRow$opp_score[i]
+    location <- gameRow$location[i]
+    
+    homeCourtAdvantage <- 0
+    if(location == "H") {
+      homeCourtAdvantage <- 3
+    } else if (location == "A") {
+      homeCourtAdvantage <- -3
+    }
+    
+    actualMargin <- teamScore - oppScore
+    
+    print(paste("           Team Rtg: ", teamRtg, " Opp Rtg: ", oppRtg))
+  
+    expectedMargin <- teamRtg - oppRtg + homeCourtAdvantage
+    
+    print(paste("           Actual Margin: ", actualMargin, " Expected Margin: ", expectedMargin))
+    
+    marginOverExpected <- actualMargin - expectedMargin
+    
+    margins <- c(margins, marginOverExpected)
+  }
+  
+  return(margins)
+}
+```
+
+
+```{r}
+numOffClusters <- length(unique(offensiveDataMin$FullCluster))
+numDefClusters <- length(unique(defensiveDataMin$FullCluster))
+margin <- matrix(0, nrow = numOffClusters, ncol = numDefClusters)
+num <- matrix(0, nrow = numOffClusters, ncol = numDefClusters)
+perfOverExpect <- matrix(0, nrow = numOffClusters, ncol = numDefClusters)
+
+for(i in 1:nrow(offensiveDataMin)) {
+  teamName <- offensiveDataMin$TeamName[i]
+  currSeason <- offensiveDataMin$Season[i]
+  teamOffCluster <- offensiveDataMin$FullCluster[i]
+  
+  teamDefClusterRow <- defensiveDataMin %>% 
+    filter(TeamName == teamName, Season == currSeason)
+  
+  if (nrow(teamDefClusterRow) == 0) {
+    warning(paste("Missing DEF cluster for team:", teamName, "season:", currSeason))
+    next
+  }
+  
+  teamDefCluster <- teamDefClusterRow$FullCluster[1]
+  
+  teamOpps <- gamesData %>% 
+    filter(team == teamName, season == currSeason)
+  
+  if (nrow(teamOpps) == 0) {
+    warning(paste("No games found for team:", teamName, "season:", currSeason))
+    next
+  }
+  
+  print(paste("TEAM: ", teamName, " OFF: ", teamOffCluster, " DEF: ", teamDefCluster))
+  
+  for(j in 1:nrow(teamOpps)){
+    oppName <- teamOpps$opponent[j]
+    
+    oppOffRow <- offensiveDataMin %>% 
+      filter(TeamName == oppName, Season == currSeason)
+    
+    oppDefRow <- defensiveDataMin %>% 
+      filter(TeamName == oppName, Season == currSeason)
+    
+    oppOffCluster <- oppOffRow$FullCluster[1]
+    oppDefCluster <- oppDefRow$FullCluster[1]
+    
+    print(paste("     OPP: ", oppName, " OFF: ", oppOffCluster, " DEF: ", oppDefCluster))
+    
+    if(is.na(oppOffCluster) | is.na(oppDefCluster)) {
+      next
+    }
+    
+    moes <- getMarginOverExpected(teamName, oppName, currSeason, netratings_all, gamesData)
+
+    if (is.na(moes[1])) {
+      next
+    }
+    
+    for (moe in moes) {
+      print(paste("           MOE: ", moe))
+      
+      margin[teamOffCluster, oppDefCluster] <- margin[teamOffCluster, oppDefCluster] + moe
+      num[teamOffCluster, oppDefCluster] <- num[teamOffCluster, oppDefCluster] + 1
+    
+      # Mirror the stat for defense side
+      margin[oppOffCluster, teamDefCluster] <- margin[oppOffCluster, teamDefCluster] - moe
+      num[oppOffCluster, teamDefCluster] <- num[oppOffCluster, teamDefCluster] + 1
+    }
+  }
+}
+```
+
+```{r}
+for (k in 1:nrow(margin)) {
+  for (m in 1:ncol(margin)) {
+    if (num[k, m] > 0) {
+      perfOverExpect[k, m] <- margin[k, m] / num[k, m]
+    } else {
+      perfOverExpect[k, m] <- NA  # Avoid division by zero
+    }
+  }
+}
+```
 
 
 
