@@ -336,6 +336,9 @@ area_fill = TRUE, central_distance = 0.2, axis_name_offset = 0.2, grid.min = 0, 
 
   labels_data <- map_df(seq(0, 1, 0.25) + central_distance, text_coords) %>%
     bind_cols(text_data %>% select(-r))
+  
+  labels_data_top_axis <- labels_data %>%
+  filter(parameter == names(p_data)[2])
 
   rescaled_coords <- function(r, n_axis){
     fi <- seq(0, 2*pi, (1/n_axis)*2*pi) + pi/2
@@ -361,18 +364,19 @@ area_fill = TRUE, central_distance = 0.2, axis_name_offset = 0.2, grid.min = 0, 
                             aes(x, y, group = group, 
                                 col = group, fill = group), 
                                 size = 1, alpha = 0.05, show.legend = FALSE)} +
-    geom_text(data = labels_data, 
-                     aes(x, y, label = value), alpha = 0.65) +
+    geom_text(data = labels_data_top_axis, 
+                     aes(x, y, label = value), alpha = 1, size = 5) +
     geom_text(data = text_coords(1 + central_distance + axis_name_offset), 
               aes(x, y), label = labels_data$parameter[1:(ncol(p_data)-1)]) +
     labs(col = legend_title) +
     theme(legend.position = "bottom",
           legend.text = element_text(size = 12),
-          legend.title = element_text(size = 12))
+          legend.title = element_text(size = 12)) +
+    coord_fixed()
 }
 ```
 
-```{r, fig.height=7}
+```{r, fig.height=10}
 radarData <- makeCompTable(1, off_scaled_df) %>% 
   filter(Type %in% c("Cluster 1", "Non Cluster 1")) %>% 
   rename(group = Type)
@@ -380,6 +384,17 @@ radarData <- makeCompTable(1, off_scaled_df) %>%
 ggspider(radarData, grid.min = -2, grid.max = 2)
 ```
 
+```{r}
+makePolyPlot <- function(clusterN, scaled_df) {
+  radarData <- makeCompTable(clusterN, scaled_df) %>% 
+  filter(Type %in% c(paste("Cluster", clusterN), paste("Non Cluster", clusterN))) %>% 
+  rename(group = Type)
+
+  spiderPlot <- ggspider(radarData, grid.min = -2, grid.max = 2)
+  
+  return(spiderPlot)
+}
+```
 
 
 
@@ -437,10 +452,6 @@ makePolyPlot <- function(clusterN, scaled_df) {
   
   return(def_poly_plot)
 }
-```
-
-```{r}
-makePolyPlot(1, off_scaled_df)
 ```
 
 
@@ -549,7 +560,7 @@ elbow_plot
 
 ### Run K-Means with selected k (centers), label observations w/ clusters
 ```{r}
-k <- 10
+k <- 8
 
 set.seed(123)
 km14 <- kmeans(off_scaled_cluster, centers = k, nstart = 20)
@@ -561,10 +572,14 @@ off_scaled_df <- as.data.frame(off_scaled)
 off_scaled_df$FullCluster <- as.factor(km14$cluster)
 ```
 
+```{r, fig.height=10}
+makePolyPlot(1, off_scaled_df)
+```
+
 ### Make PDF Full of Offensive Outputs for each cluster
 ```{r}
 # Open a PDF before the loop
-pdf("offense_clusters_summary.pdf", width = 11, height = 14)  # Landscape
+pdf("offense_clusters_summary.pdf", width = 15, height = 25)  # Landscape
 
 for (clusterN in 1:k) {
   
@@ -711,7 +726,7 @@ def_scaled_df$FullCluster <- as.factor(km14$cluster)
 ### Make PDF Full of Offensive Outputs for each cluster
 ```{r}
 # Open a PDF before the loop
-pdf("defensive_clusters_summary.pdf", width = 12, height = 14)  # Landscape
+pdf("defensive_clusters_summary.pdf", width = 15, height = 25)  # Landscape
 
 for (clusterN in 1:k) {
   
@@ -864,6 +879,8 @@ getMarginOverExpected <- function(teamName, opponentName, gameSeason, netratings
 
 
 ```{r}
+# BEWARE: This will blow up a bunch of print statements...
+# Rest assured, you can close the chunk's output console :)
 numOffClusters <- length(unique(offensiveDataMin$FullCluster))
 numDefClusters <- length(unique(defensiveDataMin$FullCluster))
 margin <- matrix(0, nrow = numOffClusters, ncol = numDefClusters)
@@ -934,6 +951,7 @@ for(i in 1:nrow(offensiveDataMin)) {
 ```
 
 ```{r}
+# Create Performance Over Expectation "matrix"
 for (k in 1:nrow(margin)) {
   for (m in 1:ncol(margin)) {
     if (num[k, m] > 0) {
@@ -946,6 +964,18 @@ for (k in 1:nrow(margin)) {
 ```
 
 
+```{r}
+saveRDS(margin, file = "margin.rds")
+saveRDS(num, file = "num.rds")
+saveRDS(perfOverExpect, file = "perfOverExpect.rds")
+```
+
+NOTE: Use this to read in these data structures so you don't have to rerun the above!
+```{r}
+margin <- readRDS("margin.rds")
+num <- readRDS("num.rds")
+perfOverExpect <- readRDS("perfOverExpect.rds")
+```
 
 
 
