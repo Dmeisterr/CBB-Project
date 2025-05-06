@@ -6,9 +6,9 @@ output: pdf_document
 ---
 
 ```{r}
-setwd("C:/Users/SethJ/OneDrive/Desktop/U of A/Spring 2025/Sports Analytics/ncaahoopR_data")
+setwd("C:/Users/SethJ/OneDrive/Desktop/U of A/Spring 2025/Sports Analytics/CBB-project/ncaahoopR_data")
 
-starter_path <- "C:/Users/SethJ/OneDrive/Desktop/U of A/Spring 2025/Sports Analytics/ncaahoopR_data"
+starter_path <- "C:/Users/SethJ/OneDrive/Desktop/U of A/Spring 2025/Sports Analytics/CBB-project/ncaahoopR_data"
 ```
 
 ```{r}
@@ -26,7 +26,7 @@ pac12 <- c("Arizona", "Arizona_State","Cal", "Colorado", "Oregon", "Oregon_State
 sec <- c("Alabama", "Arkansas", "Auburn", "Florida", "Georgia", "Kentucky", "LSU", "Ole_Miss", "Miss_St", "Missouri", "South_Carolina", "Tennessee", "Texas_A&M", "Vanderbilt")
 
 teams <- c(acc, big12, big10, pac12, sec)
-seasons <- c("2019-20", "2020-21", "2022-23", "2023-24")
+seasons <- c("2019-20", "2020-21", "2021-22", "2022-23", "2023-24")
 ```
 
 ```{r}
