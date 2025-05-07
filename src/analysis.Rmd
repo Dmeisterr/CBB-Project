@@ -626,6 +626,12 @@ for (clusterN in 1:k) {
 }
 ```
 
+```{r}
+write.csv(offensiveDataMin, "offensiveDataMin.csv")
+write.csv(off_scaled_df, "off_scaled_df.csv")
+```
+
+
 ### DEFENSE
 
 ### Develop Defensive Data Frame
@@ -773,6 +779,10 @@ for (clusterN in 1:k) {
 }
 ```
 
+```{r}
+write.csv(defensiveDataMin, "defensiveDataMin.csv")
+write.csv(def_scaled_df, "def_scaled_df.csv")
+```
 
 
 
@@ -978,25 +988,6 @@ perfOverExpect <- readRDS("perfOverExpect.rds")
 ```
 
 
-
-
-
-
-
-
-
-
-
-
-```{r}
-cum_pve <- summary(pca_result)$importance[3, ]
-
-plot(cum_pve, type = "b",
-     xlab = "Principal Component",
-     ylab = "Cumulative Proportion of Variance Explained",
-     main = "Cumulative Variance Explained")
-
-```
 
 
 
