@@ -13,11 +13,36 @@ library(tidyverse)
 library(ggplot2)
 library(DT)
 
+# Set working directory to inside CBB_Archetype_Dashboard
+
 perfOverExpect <- readRDS("perfOverExpect.rds")
 offensiveDataMin <- read.csv("offensiveDataMin.csv")
 defensiveDataMin <- read.csv("defensiveDataMin.csv")
 off_scaled_df <- read.csv("off_scaled_df.csv")
 def_scaled_df <- read.csv("def_scaled_df.csv")
+
+# Custom Cluster Names
+offensiveClusterNames <- c(
+  "Offensive Cluster 1",
+  "Offensive Cluster 2",
+  "Offensive Cluster 3",
+  "Offensive Cluster 4",
+  "Offensive Cluster 5",
+  "Offensive Cluster 6",
+  "Offensive Cluster 7",
+  "Offensive Cluster 8"
+)
+
+defensiveClusterNames <- c(
+  "Defensive Cluster 1",
+  "Defensive Cluster 2",
+  "Defensive Cluster 3",
+  "Defensive Cluster 4",
+  "Defensive Cluster 5",
+  "Defensive Cluster 6",
+  "Defensive Cluster 7",
+  "Defensive Cluster 8"
+)
 
 
 ## Credit: https://towardsdatascience.com/how-to-make-a-spider-chart-in-r-using-ggplot2-85a4f1898cab/
@@ -118,26 +143,39 @@ makePolyPlot <- function(clusterN, scaled_df) {
 ui <- dashboardPage(
   dashboardHeader(disable = TRUE),
   dashboardSidebar(
-    selectInput(
-      inputId = "teamInput",
-      label = "Team:",
-      choices = c('Alabama', 'Arizona', 'Auburn')
+    radioButtons(
+      inputId = "teamOrClusterInput",
+      label = "Select Filter:",
+      choices = c("By Team", "By Cluster"),
+      selected = c("By Team")
     ),
-    selectInput(
-      inputId = "seasonInput",
-      label = "Season",
-      choices = c('2019-20', '2020-21', '2021-22', '2022-23', '2023-24')
+    conditionalPanel(
+      condition = "input.teamOrClusterInput == 'By Team'",
+      selectInput(
+        inputId = "teamInput",
+        label = "Team:",
+        choices = unique(offensiveDataMin$TeamName)
+      ),
+      selectInput(
+        inputId = "seasonInput",
+        label = "Season",
+        choices = unique(offensiveDataMin$Season)
+      )
     ),
-    selectInput(
-      inputId = "offArch",
-      label = "Offensive Archetype:",
-      choices = c(1, 2, 3, 4, 5, 6, 7, 8)
+    conditionalPanel(
+      condition = "input.teamOrClusterInput == 'By Cluster'",
+      selectInput(
+        inputId = "offArch",
+        label = "Offensive Archetype:",
+        choices = offensiveClusterNames
+      ),
+      selectInput(
+        inputId = "defArch",
+        label = "Defensive Archetype:",
+        choices = defensiveClusterNames
+      )
     ),
-    selectInput(
-      inputId = "defArch",
-      label = "Offensive Archetype:",
-      choices = c(1, 2, 3, 4, 5, 6, 7, 8)
-    ),
+    actionButton("submit", "Submit"),
     sidebarMenu(
       menuItem("Overview", tabName = "overviewTab", icon = NULL,
         menuSubItem("CBB Archetype Dashboard", tabName = "cbbArchetypeDash")         
@@ -173,18 +211,25 @@ ui <- dashboardPage(
         tabName = "cbbArchetypeDash",
         h2("CBB Archetype Dashboard"),
         box(
-          width = 2,
+          width = 3,
           fluidRow(
-            column(width = 12, h4("Similar Teams:"))
+            column(width = 12, h2("Comparable Teams:", align = "center"))
           ),
           fluidRow(
-            column(width = 12,
-                div(style = "width: 90%; margin: auto;", DTOutput("similarTeamsTable"))
+            column(width = 6, h3("Offense:", align = "center")),
+            column(width = 6, h3("Defense:", align = "center"))
+          ),
+          fluidRow(
+            column(width = 6,
+                div(style = "width: 95%; margin: auto;", DTOutput("similarOffTeamsTable"))
+            ),
+            column(width = 6,
+                   div(style = "width: 95%; margin: auto;", DTOutput("similarDefTeamsTable"))
             )
           )
         ),
         box(
-          width = 10,
+          width = 9,
           fluidRow(
             column(width = 6, h2(textOutput("offensiveLbl"), align = "center")),
             column(width = 6, h2(textOutput("defensiveLbl"), align = "center"))
@@ -207,10 +252,10 @@ ui <- dashboardPage(
           ),
           fluidRow(
             column(width = 6,
-              div(style = "width: 70%; margin: auto;", DTOutput("offenseTable"))
+              div(style = "width: 60%; margin: auto;", DTOutput("offenseTable"))
             ),
             column(width = 6,
-              div(style = "width: 70%; margin: auto;", DTOutput("defenseTable"))
+              div(style = "width: 60%; margin: auto;", DTOutput("defenseTable"))
             )
           ),
           fluidRow(
@@ -220,10 +265,10 @@ ui <- dashboardPage(
           ),
           fluidRow(
             column(width = 6,
-              div(style = "width: 70%; margin: auto;", DTOutput("versusDefTable"))
+              div(style = "width: 60%; margin: auto; padding-bottom: 40px;", DTOutput("versusDefTable"))
             ),
             column(width = 6,
-              div(style = "width: 70%; margin: auto;", DTOutput("versusOffTable"))
+              div(style = "width: 60%; margin: auto; padding-bottom: 40px;", DTOutput("versusOffTable"))
             )
           )
         )
@@ -232,42 +277,323 @@ ui <- dashboardPage(
   )
 )
 
-# Define server logic required to draw a histogram
-server <- function(input, output) {
-  output$similarTeamsTable <- renderDT({
-    datatable(mtcars[,1:2], options = list(pageLength = 30, dom = 't'), class = "compact")
-  })
-  
+# Server Functions
+
+setClusterLabels <- function(input, output, offensiveClusterNames, teamOffCluster, defensiveClusterNames, teamDefCluster) {
   output$offensiveLbl <- renderText({
-    paste("Offensive Cluster 1")
+    paste(offensiveClusterNames[teamOffCluster])
   })
   
   output$defensiveLbl <- renderText({
-    paste("Defensive Cluster 1")
+    paste(defensiveClusterNames[teamDefCluster])
   })
+}
+
+createSpiderPlots <- function(input, output, teamOffCluster, teamDefCluster, off_scaled_df, def_scaled_df) {
   
+  # Produce Spider Plots for offensive and defensive clusters
   output$offensivePlot <- renderPlot({
-    makePolyPlot(1, off_scaled_df)
+    makePolyPlot(teamOffCluster, off_scaled_df)
   })
   
   output$defensivePlot <- renderPlot({
-    makePolyPlot(1, def_scaled_df)
+    makePolyPlot(teamDefCluster, def_scaled_df)
   })
+}
+
+createStatsTables <- function(input, output, teamOffensiveData, off_scaled_df, teamOffCluster,
+                              teamDefensiveData, def_scaled_df, teamDefCluster) {
+  offense_table_data <- teamOffensiveData %>% 
+    pivot_longer(cols = everything(),
+                 names_to = "Statistic",
+                 values_to = "Value") %>%
+    mutate(Value = round(Value, 2))
+  
+  off_scaled_table_data <- off_scaled_df %>% 
+    filter(TeamName == input$teamInput, Season == input$seasonInput) %>% 
+    select(-TeamName, -Season, -FullCluster, -X) %>% 
+    pivot_longer(cols = everything(),
+                 names_to = "Statistic",
+                 values_to = "Z_Value") %>% 
+    mutate(Z_Value = round(Z_Value, 2))
+  
+  off_var_df <- makeVarDf(teamOffCluster, off_scaled_df) %>% 
+    rename(Statistic = feature, VarRed = variance) %>% 
+    mutate(VarRed = round(VarRed, 2))
+  
+  offense_table_data <- offense_table_data %>%
+    left_join(off_scaled_table_data, by = "Statistic") %>%
+    left_join(off_var_df, by = "Statistic") %>% 
+    arrange(-VarRed)
+  
+  defense_table_data <- teamDefensiveData %>%
+    pivot_longer(cols = everything(), 
+                 names_to = "Statistic", 
+                 values_to = "Value") %>%
+    mutate(Value = round(Value, 2)) 
+  
+  def_scaled_table_data <- def_scaled_df %>% 
+    filter(TeamName == input$teamInput, Season == input$seasonInput) %>% 
+    select(-TeamName, -Season, -FullCluster, -X) %>% 
+    pivot_longer(cols = everything(),
+                 names_to = "Statistic",
+                 values_to = "Z_Value") %>% 
+    mutate(Z_Value = round(Z_Value, 2))
+  
+  def_var_df <- makeVarDf(teamDefCluster, def_scaled_df) %>% 
+    rename(Statistic = feature, VarRed = variance) %>% 
+    mutate(VarRed = round(VarRed, 2))
+  
+  defense_table_data <- defense_table_data %>%
+    left_join(def_scaled_table_data, by = "Statistic") %>%
+    left_join(def_var_df, by = "Statistic") %>% 
+    arrange(-VarRed)
+  
+  negated_off_stats <- c("off_BlockPct", "off_StlRate", "off_NSTRate", "off_TOPct")
+  negated_def_stats <- c("def_eff_adj",
+                         "def_FG2Pct",
+                         "def_FG3Pct",
+                         "def_FTPct",
+                         "def_FG3Rate",
+                         "def_ARate",
+                         "def_eFGPct",
+                         "def_ORPct",
+                         "def_FTRate",
+                         "Def_1",
+                         "Def_2",
+                         "Def_3")
+  
+  offense_table_data <- offense_table_data %>%
+    mutate(Z_Value = ifelse(Statistic %in% negated_off_stats, -Z_Value, Z_Value))
+  
+  defense_table_data <- defense_table_data %>%
+    mutate(Z_Value = ifelse(Statistic %in% negated_def_stats, -Z_Value, Z_Value))
+  
+  cuts <- seq(-2.5, 2.5, length.out = 11)
+  colors <- colorRampPalette(c("red", "white", "blue"))(12)
+  
   
   output$offenseTable <- renderDT({
-    datatable(mtcars[,1:3], options = list(pageLength = 5, dom = 't'), class = "compact")
+    datatable(offense_table_data,
+              options = list(pageLength = 30,
+                             dom = 't',
+                             columnDefs = list(list(visible = FALSE, targets = 2))),
+              class = "compact",
+              rownames = FALSE) %>%
+      formatStyle(
+        'Value',
+        backgroundColor = styleInterval(
+          cuts = cuts,
+          values = colors
+        ),
+        valueColumns = 'Z_Value'  # use Z_Value to drive the coloring
+      )
   })
   
   output$defenseTable <- renderDT({
-    datatable(iris[,1:3], options = list(pageLength = 5, dom = 't'), class = "compact")
+    datatable(defense_table_data,
+              options = list(pageLength = 30,
+                             dom = 't',
+                             columnDefs = list(list(visible = FALSE, targets = 2))),
+              class = "compact",
+              rownames = FALSE) %>%
+      formatStyle(
+        'Value',
+        backgroundColor = styleInterval(
+          cuts = cuts,
+          values = colors
+        ),
+        valueColumns = 'Z_Value'
+      )
   })
+}
+
+createClusterPoeTables <- function(input, output, perfOverExpect, teamOffCluster,
+                                   offensiveClusterNames, teamDefCluster, defensiveClusterNames) {
+  
+  offVsDefensePoeData <- as.data.frame(t(perfOverExpect[teamOffCluster, ]))
+  colnames(offVsDefensePoeData) <- defensiveClusterNames
+  
+  cuts2 <- seq(-15, 15, length.out = 29)
+  colors2 <- colorRampPalette(c("red", "white", "blue"))(30)
+  
+  offVsDefensePoeTableData <- offVsDefensePoeData %>% 
+    pivot_longer(cols = everything(),
+                 names_to = "Defensive Cluster",
+                 values_to = "POE") %>% 
+    mutate(POE = round(POE, 2)) %>% 
+    arrange(-POE)
   
   output$versusDefTable <- renderDT({
-    datatable(mtcars[1:3], options = list(pageLength = 5, dom = 't'), class = "compact")
+    datatable(offVsDefensePoeTableData,
+              options = list(pageLength = 8, dom = 't'),
+              class = "compact",
+              rownames = FALSE) %>% 
+      formatStyle(
+        'POE',
+        backgroundColor = styleInterval(
+          cuts = cuts2,
+          values = colors2
+        ),
+        valueColumns = 'POE'
+      )
   })
   
+  defVsOffensePoeData <- as.data.frame(t(perfOverExpect[, teamDefCluster]))
+  colnames(defVsOffensePoeData) <- offensiveClusterNames
+  
+  defVsOffensePoeTableData <- defVsOffensePoeData %>% 
+    pivot_longer(cols = everything(),
+                 names_to = "Offensive Cluster",
+                 values_to = "POE") %>% 
+    mutate(POE = round(POE, 2)) %>% 
+    arrange(-POE)
+  
   output$versusOffTable <- renderDT({
-    datatable(iris[1:3], options = list(pageLength = 5, dom = 't'), class = "compact")
+    datatable(defVsOffensePoeTableData,
+              options = list(pageLength = 8, dom = 't'), 
+              class = "compact",
+              rownames = FALSE) %>% 
+      formatStyle(
+        'POE',
+        backgroundColor = styleInterval(
+          cuts = cuts2,
+          values = colors2
+        ),
+        valueColumns = 'POE'
+      )
+  })
+}
+
+createSimilarTeamsTables <- function(input, output, offensiveDataMin, teamOffCluster, defensiveDataMin, teamDefCluster) {
+  offClusterTeamsData <- offensiveDataMin %>% 
+    filter(FullCluster == teamOffCluster) %>% 
+    select(TeamName, Season) %>% 
+    arrange(-Season)
+  
+  output$similarOffTeamsTable <- renderDT({
+    datatable(offClusterTeamsData,
+              options = list(pageLength = 150, dom = 't'),
+              class = "compact",
+              rownames = FALSE)
+  })
+  
+  defClusterTeamsData <- defensiveDataMin %>% 
+    filter(FullCluster == teamDefCluster) %>% 
+    select(TeamName, Season) %>% 
+    arrange(-Season)
+  
+  output$similarDefTeamsTable <- renderDT({
+    datatable(defClusterTeamsData,
+              options = list(pageLength = 150, dom = 't'),
+              class = "compact",
+              rownames = FALSE)
+  })
+}
+
+clusterNameToClusterInd <- function(clusterName, namesVector) {
+  return(which(namesVector == clusterName))
+}
+
+# Define server logic required to draw a histogram
+server <- function(input, output, session) {
+  
+  
+  trigger_submit <- reactiveVal(TRUE)
+  
+  observeEvent(input$teamInput, {
+    if(input$teamOrClusterInput == "By Team") {
+      team_seasons <- offensiveDataMin %>% 
+        filter(TeamName == input$teamInput) %>% 
+        pull(Season) %>% 
+        unique() %>% 
+        sort()
+      
+      updateSelectInput(
+        session,
+        inputId = "seasonInput",
+        choices = team_seasons,
+        selected = team_seasons[1]
+      )
+    }
+  })
+  
+  observeEvent({
+    input$submit
+    trigger_submit()
+    }, {
+    if(input$teamOrClusterInput == "By Team") {
+      
+      req(input$teamInput, input$seasonInput)
+      
+      teamOffensiveData <- offensiveDataMin %>% 
+        filter(TeamName == input$teamInput, Season == input$seasonInput)
+      
+      teamDefensiveData <- defensiveDataMin %>% 
+        filter(TeamName == input$teamInput, Season == input$seasonInput)
+      
+      teamOffCluster <- unique(teamOffensiveData$FullCluster)
+      
+      teamDefCluster <- unique(teamDefensiveData$FullCluster)
+      
+      teamOffensiveData <- teamOffensiveData  %>% 
+        select(-TeamName, -Season, -FullCluster, -X)
+      
+      teamDefensiveData <- teamDefensiveData  %>% 
+        select(-TeamName, -Season, -FullCluster, -X)
+      
+      # Set Dashboard Labels of clusters
+      setClusterLabels(input, output, offensiveClusterNames, teamOffCluster, defensiveClusterNames, teamDefCluster)
+      
+      # Produce Spider Plots for offensive and defensive clusters
+      createSpiderPlots(input, output, teamOffCluster, teamDefCluster, off_scaled_df, def_scaled_df)
+      
+      # Produce Tables Featuring Team Offensive / Defensive Stats
+      createStatsTables(input, output, teamOffensiveData, off_scaled_df, teamOffCluster, teamDefensiveData, def_scaled_df, teamDefCluster)
+      
+      # Create Cluster POE Tables
+      createClusterPoeTables(input, output, perfOverExpect, teamOffCluster, offensiveClusterNames, teamDefCluster, defensiveClusterNames)
+      
+      # Create Similar Teams Tables
+      createSimilarTeamsTables(input, output, offensiveDataMin, teamOffCluster, defensiveDataMin, teamDefCluster)
+      
+    } else if (input$teamOrClusterInput == "By Cluster") {
+      req(input$offArch, input$defArch)
+      
+      teamOffCluster <- clusterNameToClusterInd(input$offArch, offensiveClusterNames)
+      
+      teamDefCluster <- clusterNameToClusterInd(input$defArch, defensiveClusterNames)
+      
+      teamOffensiveData <- offensiveDataMin %>% 
+        filter(FullCluster == teamOffCluster) %>% 
+        group_by(FullCluster) %>% 
+        summarise(across(where(is.numeric), mean, na.rm = TRUE), .groups = "drop") %>% 
+        select(-FullCluster, -Season)
+      
+      teamDefensiveData <- defensiveDataMin %>% 
+        filter(FullCluster == teamOffCluster) %>% 
+        group_by(FullCluster) %>% 
+        summarise(across(where(is.numeric), mean, na.rm = TRUE), .groups = "drop") %>% 
+        select(-FullCluster, -Season)
+      
+      # Set Dashboard Labels of clusters
+      setClusterLabels(input, output, offensiveClusterNames, teamOffCluster, defensiveClusterNames, teamDefCluster)
+      
+      # Produce Spider Plots for offensive and defensive clusters
+      createSpiderPlots(input, output, teamOffCluster, teamDefCluster, off_scaled_df, def_scaled_df)
+      
+      # Produce Tables Featuring Team Offensive / Defensive Stats
+      createStatsTables(input, output, teamOffensiveData, off_scaled_df, teamOffCluster, teamDefensiveData, def_scaled_df, teamDefCluster)
+      
+      # Create Cluster POE Tables
+      createClusterPoeTables(input, output, perfOverExpect, teamOffCluster, offensiveClusterNames, teamDefCluster, defensiveClusterNames)
+      
+      # Create Similar Teams Tables
+      createSimilarTeamsTables(input, output, offensiveDataMin, teamOffCluster, defensiveDataMin, teamDefCluster)
+      
+    }
+    
+    trigger_submit(FALSE)
   })
 }
 
