@@ -23,19 +23,19 @@ def_scaled_df <- read.csv("def_scaled_df.csv")
 
 # Custom Cluster Names
 offensiveClusterNames <- c(
-  "Offensive Cluster 1",
-  "Offensive Cluster 2",
-  "Offensive Cluster 3",
-  "Offensive Cluster 4",
-  "Offensive Cluster 5",
-  "Offensive Cluster 6",
-  "Offensive Cluster 7",
-  "Offensive Cluster 8"
+  "Sloppy Slashes",
+  "Well-Rounded Ball Handlers",
+  "Average Perimeter Offense",
+  "Elite Three Level Scorers",
+  "Poor Perimeter Offense",
+  "Sloppy Inside Scorers",
+  "Efficient Guard-Centric Perimeter",
+  "Efficient Young Inside Scorers"
 )
 
 defensiveClusterNames <- c(
-  "Defensive Cluster 1",
-  "Defensive Cluster 2",
+  "Strong Interior Defense",
+  "Havoc-Reaking Perimeter",
   "Defensive Cluster 3",
   "Defensive Cluster 4",
   "Defensive Cluster 5",
@@ -446,7 +446,7 @@ createClusterPoeTables <- function(input, output, perfOverExpect, teamOffCluster
     pivot_longer(cols = everything(),
                  names_to = "Offensive Cluster",
                  values_to = "POE") %>% 
-    mutate(POE = round(POE, 2)) %>% 
+    mutate(POE = round(-POE, 2)) %>% 
     arrange(-POE)
   
   output$versusOffTable <- renderDT({

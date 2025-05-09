@@ -285,11 +285,6 @@ diffMeansHt <- function(clusterN, originalData, scaled_df){
 }
 ```
 
-
-
-
-
-
 ```{r, fig.height=20}
 ## Credit: https://towardsdatascience.com/how-to-make-a-spider-chart-in-r-using-ggplot2-85a4f1898cab/
 
@@ -845,6 +840,7 @@ getMarginOverExpected <- function(teamName, opponentName, gameSeason, netratings
   underscoreTeam <- gsub(" ", "_", teamName)
   underscoreTeam <- recode(underscoreTeam, !!!teamConversions)
   
+  # Grab game(s) with these two teams
   gameRow <- gamesData %>% 
     filter(team == underscoreTeam, opponent == opponentName, season == gameSeason)
   
@@ -854,15 +850,19 @@ getMarginOverExpected <- function(teamName, opponentName, gameSeason, netratings
     return(NA)
   }
   
+  # Get KenPom Adj Efficiency Margin Ratings
   teamRtg <- getTeamRating(teamName, gameSeason, netratings)
   oppRtg <- getTeamRating(opponentName, gameSeason, netratings)
   
   margins <- c()
-  for(i in 1:nrow(gameRow)){
+  for(i in 1:nrow(gameRow)){ # For each game
+    
+    # Get Team Score, Opponent Score, and Location
     teamScore <- gameRow$team_score[i]
     oppScore <- gameRow$opp_score[i]
     location <- gameRow$location[i]
     
+    # Get Home Court Advantage Value
     homeCourtAdvantage <- 0
     if(location == "H") {
       homeCourtAdvantage <- 3
@@ -870,6 +870,7 @@ getMarginOverExpected <- function(teamName, opponentName, gameSeason, netratings
       homeCourtAdvantage <- -3
     }
     
+    # Create Team Margin Over Expected
     actualMargin <- teamScore - oppScore
     
     print(paste("           Team Rtg: ", teamRtg, " Opp Rtg: ", oppRtg))
@@ -940,6 +941,7 @@ for(i in 1:nrow(offensiveDataMin)) {
       next
     }
     
+    # Get Margin Over Expected values for games between these teams
     moes <- getMarginOverExpected(teamName, oppName, currSeason, netratings_all, gamesData)
 
     if (is.na(moes[1])) {
@@ -949,12 +951,10 @@ for(i in 1:nrow(offensiveDataMin)) {
     for (moe in moes) {
       print(paste("           MOE: ", moe))
       
+      # Add only the Team Offensive Cluster versus Opp. Defensive Cluster Margin
+      #   The other way around will be added when the opponent is traversed
       margin[teamOffCluster, oppDefCluster] <- margin[teamOffCluster, oppDefCluster] + moe
       num[teamOffCluster, oppDefCluster] <- num[teamOffCluster, oppDefCluster] + 1
-    
-      # Mirror the stat for defense side
-      margin[oppOffCluster, teamDefCluster] <- margin[oppOffCluster, teamDefCluster] - moe
-      num[oppOffCluster, teamDefCluster] <- num[oppOffCluster, teamDefCluster] + 1
     }
   }
 }
