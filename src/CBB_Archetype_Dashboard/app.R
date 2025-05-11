@@ -23,25 +23,25 @@ def_scaled_df <- read.csv("def_scaled_df.csv")
 
 # Custom Cluster Names
 offensiveClusterNames <- c(
-  "Sloppy Slashes",
-  "Well-Rounded Ball Handlers",
-  "Average Perimeter Offense",
-  "Elite Three Level Scorers",
-  "Poor Perimeter Offense",
-  "Sloppy Inside Scorers",
+  "Sloppy Foul-Prone Slashers",
+  "Balanced Ball Controllers",
+  "Average Perimeter Focused",
+  "Elite Three Level Offense",
+  "Inefficient Launchers",
+  "Inefficient Paint Pounders",
   "Efficient Guard-Centric Perimeter",
-  "Efficient Young Inside Scorers"
+  "Young Solid Rim Runners"
 )
 
 defensiveClusterNames <- c(
-  "Strong Interior Defense",
-  "Havoc-Reaking Perimeter",
-  "Defensive Cluster 3",
-  "Defensive Cluster 4",
-  "Defensive Cluster 5",
-  "Defensive Cluster 6",
-  "Defensive Cluster 7",
-  "Defensive Cluster 8"
+  "Paint Protectors",
+  "Perimeter Pressers",
+  "Well-Rounded Grinders",
+  "Perimeter Leakers",
+  "Frantic Interior Sieve",
+  "Elite Turnover Forcers",
+  "Plodding Veterans",
+  "Soft Young Interior Pushovers"
 )
 
 
