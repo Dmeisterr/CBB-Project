@@ -5,30 +5,48 @@ date: "2025-05-08"
 output: pdf_document
 ---
 
+
 ## Introduction
-College basketball is a strategic game where a team's success depends on more than just athletic talent: team strategy and composition are important as well. In college basketball, two teams of five players at a time compete by trying to outscore the other team. To score, they must shoot a basketball through the opposing team's hoop, worth 1-3 points for each basket depending on where the shot is from (1 point for free throws after a foul, 2 for field goals within the 3 point line, and 3 points for field goals behind the three point line). The college basketball games are played in two 20-minute halves. In this project we're looking specifically at the Power 5, which has 5 conferences (ACC, Big Ten, Big 12, Pac-12, and SEC), and 70 total teams. We'll be looking at the seasons from 2019-2024.
+College basketball is a strategic game where a team's success depends on more than just athletic talent: team strategy and composition are important as well. In college basketball, two teams of five players at a time compete by trying to outscore the other team. To score, they must shoot a basketball through the opposing team's hoop, worth 1-3 points for each basket depending on where the shot is from (1 point for free throws after a foul, 2 for field goals within the 3 point line, and 3 points for field goals behind the three point line). The college basketball games are played in two 20-minute halves. In this project we're looking specifically at the Power 5, which has 5 conferences (ACC, Big Ten, Big 12, Pac-12, and SEC), and 70 total teams. We'll be looking at the seasons from 2019-2024.  
 
-One of the most interesting parts of college basketball is the difference in playing styles between teams. Some teams have offenses with fast pace and consistent 3-point shooting as their focus, while other teams might have a more center dominant offense, and there's also differences in defensive styles. We're aiming to understand how these styles (which we’ll refer to as archetypes) perform against each other, which will offer insights into matchup dynamics and competitive advantages in certain matchups.
+One of the most interesting parts of college basketball is the difference in playing styles between teams. Some teams have offenses with fast pace and consistent 3-point shooting as their focus, while other teams might have a more center dominant offense, and there's also differences in defensive styles. We're aiming to understand how these styles (which we’ll refer to as archetypes) perform against each other, which will offer insights into matchup dynamics and competitive advantages in certain matchups.  
 
-We will use clustering to group the Power 5 teams into archetypes based on performance metrics such as offensive and defensive efficiency, effective field goal percentage, pace, etc. After identifying these archetypes, we'll analyze their performance in matchups to explore whether certain styles consistently outperform others.
+We will use K-Means clustering to group the Power 5 teams into archetypes based on advanced performance metrics such as offensive and defensive efficiency, effective field goal percentage, pace, etc. After identifying these archetypes, we'll analyze their performance in matchups to explore whether certain styles consistently outperform others.  
 
 
 ## Data
-The data for our college basketball matchup analysis combines multiple datasets focusing on Power 5 conference teams across 6 seasons (2019-2024). We utilize advanced basketball metrics from KenPom.com, which provides detailed team statistics that go beyond traditional box score numbers. We also incorporate game results data from ncaahoopR, an R package that provides access to NCAA basketball matchup data.
+The data for our college basketball matchup analysis combines multiple datasets focusing on Power 5 conference teams across 6 seasons (2019-2024). We utilize advanced basketball metrics from KenPom.com, which provides detailed team statistics that go beyond traditional box score numbers. We also incorporate game results data from ncaahoopR, an R package that provides access to NCAA basketball game results data.  
 
 ### Data Sources
-Our primary data comes from several related datasets:
+Our primary data comes from several related datasets from KenPom.com:  
 
-- Team Advanced Metrics: We collected comprehensive team statistics including the "Four Factors" (effective field goal percentage, turnover rate, offensive rebounding percentage, and free throw rate) for both offense and defense.
-- Efficiency and Tempo: Each team's adjusted offensive and defensive efficiency ratings, along with pace metrics that describe how quickly teams play.
-- Player and Team Attributes: Height data, experience levels, and bench utilization statistics.
-- Game Results: Outcomes of individual games, including scores, location (home/away/neutral), and dates.
-- Point Distribution Data: Breakdowns of how teams score their points (free throws, 2-pointers, 3-pointers).
+- Team Advanced Metrics: We collected comprehensive team statistics including the "Four Factors" (effective field goal percentage, turnover rate, offensive rebounding percentage, and free throw rate) for both offense and defense.  
+- Efficiency and Tempo: Each team's adjusted offensive and defensive efficiency ratings, along with pace metrics that describe how quickly teams play.  
+- Player and Team Attributes: Height data, experience levels, and bench utilization statistics.  
+- Game Results: Outcomes of individual games, including scores, location (home/away/neutral), and dates.  
+- Point Distribution Data: Breakdowns of how teams score their points (free throws, 2-pointers, 3-pointers).  
+
+In addition, we have compiled game results data from the ncaahoopR repository from regular season games within each of these seasons. These game results allow us to analyze performance between teams of different 'archetypes' throughout this timeframe.  
 
 ### Data Processing
-We merged 6 seasons of data (2019-2024) for each metric category into combined datasets. We then filtered the data to focus only on teams in the Power 5 conferences (SEC, Pac-12, ACC, Big Ten, and Big 12). Then we renamed columns to create consistent naming conventions that distinguish between offensive and defensive metrics. Lastly, the separate metric categories were joined together using team names and seasons as matching keys.
+Data preprocessing played a significant role in allowing the analysis of college basketball teams across the timeframe of interest. The first step in this preprocessing was joining each KenPom datafile in a way that produced a individual row for every team season pair, with all of their corresponding advanced metrics associated with that row. We merged 6 seasons of data (2019-2024) for each metric category into these combined datasets. We then filtered the data to focus only on teams in the Power 5 conferences (SEC, Pac-12, ACC, Big Ten, and Big 12). Next, we renamed columns to create consistent naming conventions that distinguish between offensive and defensive metrics. Lastly, the separate metric categories were joined together using team names and seasons as matching keys. The extent of this process can be viewed within data_analysis.Rmd, with further cleaning below, but was not included in this paper for conciseness.    
+
+Further, we scraped the ncaahoopR repository to create a dataset of all Power 5 game results from within this timeframe. This process was quite simple yet computationally extensive, and is detailed within the ncaahoopR_sample.Rmd file.  
+
+Finally, in order to prepare our data to be used to create team 'archetypes', we finalized cleaning with renaming and cropping features within the dataset, which can be seen below.  
+
 
 #### Read in Data
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(gridExtra)
+library(fmsb)
+library(tibble)
+library(purrr)
+library(reshape2)
+```
+
 ```{r}
 mergeDataStr <- paste0(getwd(), "/data/merged_data.csv")
 mergeData <- read.csv(mergeDataStr)
@@ -97,7 +115,7 @@ p5Data <- mergeData %>%
 ```
 
 ### Feature Selection
-For our clustering analysis, we focused on metrics that describe a team's playing style. We removed ranking variables and other columns not directly relevant to our analysis:
+For our clustering analysis, we focused on metrics that describe a team's playing style. We removed ranking variables and other columns not directly relevant to our analysis:  
 
 ```{r}
 pca_data <- p5Data %>% 
@@ -109,24 +127,24 @@ pca_data <- p5Data %>%
 
 ```
 
-We further refined our datasets for offensive and defensive clustering, as shown in methods section below.
+We further refined our datasets for offensive and defensive clustering, as shown in methods section below.  
 
-The final dataset includes 400+ team-seasons, 45 performance metrics per team, and over 11,000 games with Power 5 teams. This dataset provides the foundation for our archetype identification and matchup analysis, allowing us to identify patterns in team playing styles and evaluate how different stylistic approaches perform against one another.
+The final dataset includes 400+ team-seasons, 45 performance metrics per team, and over 11,000 games with Power 5 teams. This dataset provides the foundation for our archetype identification and matchup analysis, allowing us to identify patterns in team playing styles and evaluate how different stylistic approaches perform against one another.  
 
 ## Methods and Analysis
-To group college basketball teams on similar characteristics, we applied K-Means clustering to advanced team metrics obtained from KenPom.com. The decision on how to create these groupings, and what metrics to use to define them, was one that had a variety of options. Ultimately, we chose to perform separate offensive and defensive clusterings. This decision was driven by our focus on quantifying favorable and unfavorable matchups, as well as the limitations existing in both the dataset and modeling methodology.
+To group college basketball teams on similar characteristics, we applied K-Means clustering to advanced team metrics obtained from KenPom.com. The decision on how to create these groupings, and what metrics to use to define them, was one that had a variety of options. Ultimately, we chose to perform separate offensive and defensive clusterings. This decision was driven by our focus on quantifying favorable and unfavorable matchups, as well as the limitations existing in both the dataset and modeling methodology.  
 
-A basketball game between Team 1 and Team 2 involves two distinct matchups: Team 1's offense versus Team 2's defense, and Team 1's defense versus Team 2's offense. Beyond these two matchups, complex interactions between them exist, including pace of play and shot selection, which can meaningly influence the outcome of the game. However, quantifying these interactions is difficult.
+A basketball game between Team 1 and Team 2 involves two distinct matchups: Team 1's offense versus Team 2's defense, and Team 1's defense versus Team 2's offense. Beyond these two matchups, complex interactions between them exist, including pace of play and shot selection, which can meaningly influence the outcome of the game. However, quantifying these interactions is difficult.  
 
-First, data limitations constrain our ability to evaluate enough game outcomes to produce statistically significant insights. Specifically, each team in a game has particular offensive and defensive styles or 'archetypes', and every matchup reflects a unique interaction between these two sets of archetypes. Because each archetype set pairing occurs relatively infrequently, there isn't enough data to analyze each one, and the interaction encapsulated by it, individually.
+First, data limitations constrain our ability to evaluate enough game outcomes to produce statistically significant insights. Specifically, each team in a game has particular offensive and defensive styles or 'archetypes', and every matchup reflects a unique interaction between these two sets of archetypes. Because each archetype set pairing occurs relatively infrequently, there isn't enough data to analyze each one, and the interaction encapsulated by it, individually.  
 
-Secondly, while an alternate approach is evaluating each offensive versus defensive matchup within a game sepearately and then modeling their interaction, doing so involves significant complexities, modeling methodologies, and interpretation detriments, that did not align with the scope or focus of this project.
+Secondly, while an alternate approach is evaluating each offensive versus defensive matchup within a game sepearately and then modeling their interaction, doing so involves significant complexities, modeling methodologies, and interpretation detriments, that did not align with the scope or focus of this project.  
 
-As a result of these considerations, we opted to individually cluster teams into offensive and defensive clusters based on their offensive and defensive related metrics. This decision allowed us to reduce the number of features within each clustering iteration, reducing the effect of the curse of dimensionality, and improving performance of the K-Means clustering algorithm. The trade-off, though, is that instead of producing a single metric to evaluate a game matchup, we obtain two separate metrics that quantify the matchup between each of the two offensive versus defensive matchups within a game.
+As a result of these considerations, we opted to individually cluster teams into offensive and defensive clusters based on their offensive and defensive related metrics. This decision allowed us to reduce the number of features within each clustering iteration, reducing the effect of the curse of dimensionality, and improving performance of the K-Means clustering algorithm. The trade-off, though, is that instead of producing a single metric to evaluate a game matchup, we obtain two separate metrics that quantify the matchup between each of the two offensive versus defensive matchups within a game.  
 
-First, we assign each team in the dataset to both an offensive and defensive cluster. Initially, this involves determining an optimal amount of clusters, K, since K-Means clustering cannot infer this from unlabeled data. To tune this parameter, we evaluated a range of K values and measured their within cluster sum of squared errors at each step, which essentially quantifies how far away the data points assigned to a specific cluster are from the cluster's center. Minimizing this error improves cluster compactness, ensuring more and more certaintly that the data points are assigned to the correct cluster center. In practice, though, the optimal K is unable to be found, as increasing K always results in a decrease in within cluster sum of squared errors.
+First, we assign each team in the dataset to both an offensive and defensive cluster. Initially, this involves determining an optimal amount of clusters, K, since K-Means clustering cannot infer this from unlabeled data. To tune this parameter, we evaluated a range of K values and measured their within cluster sum of squared errors at each step, which essentially quantifies how far away the data points assigned to a specific cluster are from the cluster's center. Minimizing this error improves cluster compactness, ensuring more and more certaintly that the data points are assigned to the correct cluster center. In practice, though, the optimal K is unable to be found, as increasing K always results in a decrease in within cluster sum of squared errors.  
 
-To address this, we employed the elbow method, which involves plotting within cluster sum of squared errors for the range of values of K tested. The idea of this method is that if you can identify an 'elbow', a point in which the amount of decrease in error significantly decreases, the K value corresponding to this value is a good choice for K. The 'elbow' indicates a point where within cluster sum of squared errors is close to minimized, but doesn't allow choosing of too high a K value to overfit the data with. Below, we create elbow plots for both offensive and defensive clustering.
+To address this, we employed the elbow method, which involves plotting within cluster sum of squared errors for the range of values of K tested. The idea of this method is that if you can identify an 'elbow', a point in which the amount of decrease in error significantly decreases, the K value corresponding to this value is a good choice for K. The 'elbow' indicates a point where within cluster sum of squared errors is close to minimized, but doesn't allow choosing of too high a K value to overfit the data with. Below, we create elbow plots for both offensive and defensive clustering.  
 
 ### Offense
 #### Create Minimized Offensive Dataset
@@ -297,11 +315,11 @@ elbow_plot <- ggplot(wss_df, aes(x = clusters, y = wss, group = 1))+
 
 elbow_plot
 ```
-As shown in each of the elbow plots above, there is no sharply defined 'elbow' that clearly indicates the optimal value of K, or the number of clusters to create for both offensive and defensive groupings. Fortunately, given the exploratory and unsupervised nature of K-Means, the choice of K can be guided by both the visual evidence from the plots, as well as the goals of the analysis. Based on the trends observed in the plots, a reasonable range for K falls between approximately 5 and 14.
+As shown in each of the elbow plots above, there is no sharply defined 'elbow' that clearly indicates the optimal value of K, or the number of clusters to create for both offensive and defensive groupings. Fortunately, given the exploratory and unsupervised nature of K-Means, the choice of K can be guided by both the visual evidence from the plots, as well as the goals of the analysis. Based on the trends observed in the plots, a reasonable range for K falls between approximately 5 and 14.  
 
-Based on the goals and interests of this projects, we chose to create K = 8 clusters for both offensive and defensive groupings. Several factors influenced this decision. First, since we were aiming to create a diverse set of team archetypes on both sides of the ball, we did not want to choose to small of a value of K, as this small number of clusters would not capture the unique differences between playing styles as well. In contrast, selecting too large a K would result in an effective overfitting of clusters, which would create difficulty in distinguishing and interpreting styles of the clusters, as well as reduce the number of teams per cluster to meaningfully analyze historical matchups.
+Based on the goals and interests of this projects, we chose to create K = 8 clusters for both offensive and defensive groupings. Several factors influenced this decision. First, since we were aiming to create a diverse set of team archetypes on both sides of the ball, we did not want to choose to small of a value of K, as this small number of clusters would not capture the unique differences between playing styles as well. In contrast, selecting too large a K would result in an effective overfitting of clusters, which would create difficulty in distinguishing and interpreting styles of the clusters, as well as reduce the number of teams per cluster to meaningfully analyze historical matchups.  
 
-With the value of K chosen as 8 for each cluster, we reran the K-Means algorithm with this value and a consistent random seed to create both offensive and defensive cluster assignments for each team.  
+With the value of K chosen as 8 for each cluster, we reran the K-Means algorithm with this value and a consistent random seed to create both offensive and defensive cluster assignments for each team.   
 
 ### Offense
 ```{r}
@@ -331,13 +349,13 @@ def_scaled_df <- as.data.frame(def_scaled)
 def_scaled_df$FullCluster <- as.factor(km14$cluster)
 ```
 
-With offensive and defensive cluster assignments for each team established, our goal is to quantify how favorable or unfavorable specific matchups are between different offensive versus defensive archetype matchups. To acheive this, we developed a 'performance over expectation' (POE) metric for each offensive cluster defensive cluster pairing. 
+With offensive and defensive cluster assignments for each team established, our goal is to quantify how favorable or unfavorable specific matchups are between different offensive versus defensive archetype matchups. To achieve this, we developed a 'performance over expectation' (POE) metric for each offensive cluster defensive cluster pairing.  
 
-The idea is quite intuitive, and can be clearly illustrated through an example. Assume Team 1 belongs to offensive cluster 2 and defensive cluster 3, and Team 2 belongs to offensive cluster 1 and defensive cluster 7. In their matchup, Team 1 wins the game 85-70. According to KenPom's adjusted efficiency margin (AdjEM), which estimates how many points better or worse a team is than average, Team 1 has an AdjEM of 13 and Team 2 has an AdjEM of 3. Since the game is played on a neutral court, Team 1 is expected to win by 10 points (13 - 3). The actual margin of victory was 15 points, so Team 1 exceeded expectations by 5 points.
+The idea is quite intuitive, and can be clearly illustrated through an example. Assume Team 1 belongs to offensive cluster 2 and defensive cluster 3, and Team 2 belongs to offensive cluster 1 and defensive cluster 7. In their matchup, Team 1 wins the game 85-70. According to KenPom's adjusted efficiency margin (AdjEM), which estimates how many points better or worse a team is than average, Team 1 has an AdjEM of 13 and Team 2 has an AdjEM of 3. Since the game is played on a neutral court, Team 1 is expected to win by 10 points (13 - 3). The actual margin of victory was 15 points, so Team 1 exceeded expectations by 5 points.  
 
-This 5 point performance over expectation contributes to both matchups within the game: Team 1's offense versus Team 2's defense, and Team 1's defense versus Team 2's offense. By performing such an analysis over all games within the dataset, we can calculate the average performance over expectation for each unique offensive cluster versus defensive cluster pairing.
+This 5 point performance over expectation contributes to both matchups within the game: Team 1's offense versus Team 2's defense, and Team 1's defense versus Team 2's offense. By performing such an analysis over all games within the dataset, we can calculate the average performance over expectation for each unique offensive cluster versus defensive cluster pairing.  
 
-The result of this aggregation is a matrix, where each entry (i, j) represents the average points above (or below) expectation that teams in offensive cluster i score against teams in defensive cluster j. This matrix summarizes, in a numerical way, the matchup effectiveness and favorability between any offensive cluster defensive archetype combination.
+The result of this aggregation is a matrix, where each entry (i, j) represents the average points above (or below) expectation that teams in offensive cluster i score against teams in defensive cluster j. This matrix summarizes, in a numerical way, the matchup effectiveness and favorability between any offensive cluster defensive archetype combination.  
 
 ### Performance Over Expectation Analysis
 ```{r}
@@ -526,17 +544,59 @@ for (k in 1:nrow(margin)) {
     }
   }
 }
-
-perfOverExpect
 ```
 
-With this analysis complete, we can now identify favorable and unfavorable matchups based on the numerically defined groupings of college basketball teams. The process begins by determining a team's offensive and defensive cluster assignments. Using these, we reerence the performance over expectation matrix (perfOverExpect) to assess the favorability, through performance over expectation historically, of the matchup.
+```{r, fig.height = 5}
+# Custom Cluster Names
+offensiveClusterNames <- c(
+  "Sloppy Foul-Prone Slashers",
+  "Balanced Ball Controllers",
+  "Average Perimeter Focused",
+  "Elite Three Level Offense",
+  "Inefficient Launchers",
+  "Inefficient Paint Pounders",
+  "Efficient Guard-Centric Perimeter",
+  "Young Solid Rim Runners"
+)
 
-To evaluate a team's offensive matchup favorabilities, we examine the row in the POE matrix corresponding to the team's offensive cluster. Positive values in this row indicate that teams within this offensive cluster outperform expectations against the defensive cluster represented by that columns index. Conversely, negative values indicate underperformance against that defensive archetype.
+defensiveClusterNames <- c(
+  "Paint Protectors",
+  "Perimeter Pressers",
+  "Well-Rounded Grinders",
+  "Perimeter Leakers",
+  "Frantic Interior Sieve",
+  "Elite Turnover Forcers",
+  "Plodding Veterans",
+  "Soft Young Interior Pushovers"
+)
 
-Evaluation of a team's defensive matchup favorability requires an inverted view. In this analysis, we examine the column in the POE matrix corresponding to the team's defensive cluster. We can see how various offensive archetype performs against this defensive cluster by evaluating entries of this column. In this case, negative values suggest that the team's defensive cluster tends to hold the respective archetype below expectation, indicating a defensive performance that is better than expectation.
+rownames(perfOverExpect) <- offensiveClusterNames
+colnames(perfOverExpect) <- defensiveClusterNames
 
-Given these contrasting, and somewhat easily confusable viewpoints of the POE matrix, a key focus was placed on developing clear visualizations to aid in understanding how different team archetypes perform in different matchups. Beyond this, we aimed to characterize the defining features of each cluster, allowing explanation of the shared traits or tendencies among teams of that cluster, and their strength within these defining characteristics. Below, we define a variety of supplementary functions that allow for visualization of such defining characteristics of clusters, with explanations succeeding each visualization.
+perf_df <- melt(perfOverExpect)
+colnames(perf_df) <- c("Offensive", "Defensive", "Value")
+
+ggplot(perf_df, aes(x = Defensive, y = Offensive, fill = Value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradientn(colors = c("red", "orange", "yellow", "green")) +
+  geom_text(aes(label = round(Value, 1)), size = 3) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Performance Over Expectation Heatmap") +
+  coord_fixed()
+```
+
+![Win Percentage Matrix (in perspective of Offensive Cluster)](winPctPlot.png)
+
+The performance over expectation matrix can be visualized above in the form of a heatmap, and for supplementary purposes, we have included a win percentage matrix with a similar approach.  
+
+With this analysis complete, we can now identify favorable and unfavorable matchups based on the numerically defined groupings of college basketball teams. The process begins by determining a team's offensive and defensive cluster assignments. Using these, we reerence the performance over expectation matrix (perfOverExpect) to assess the favorability, through performance over expectation historically, of the matchup.  
+
+To evaluate a team's offensive matchup favorabilities, we examine the row in the POE matrix corresponding to the team's offensive cluster. Positive values in this row indicate that teams within this offensive cluster outperform expectations against the defensive cluster represented by that columns index. Conversely, negative values indicate underperformance against that defensive archetype.  
+
+Evaluation of a team's defensive matchup favorability requires an inverted view. In this analysis, we examine the column in the POE matrix corresponding to the team's defensive cluster. We can see how various offensive archetype performs against this defensive cluster by evaluating entries of this column. In this case, negative values suggest that the team's defensive cluster tends to hold the respective archetype below expectation, indicating a defensive performance that is better than expectation.  
+
+Given these contrasting, and somewhat easily confusable viewpoints of the POE matrix, a key focus was placed on developing clear visualizations to aid in understanding how different team archetypes perform in different matchups. Beyond this, we aimed to characterize the defining features of each cluster, allowing explanation of the shared traits or tendencies among teams of that cluster, and their strength within these defining characteristics. Below, we define a variety of supplementary functions that allow for visualization of such defining characteristics of clusters, with explanations succeeding each visualization.  
 
 
 ### Supplementary Functions
@@ -769,39 +829,55 @@ makePolyPlot <- function(clusterN, scaled_df) {
 }
 ```
 
-### Identifying for an Example Team
-Let's assume a team is of offensive cluster 1. Below, we can see two plots that assist in understanding of each of these cluster's defining characteristics.
+### Analysis of Charactaristics for an Example Team
+Let's assume a team is of offensive cluster 1. Below, we can see two plots that assist in understanding of each of these cluster's defining characteristics.  
 
 ```{r, fig.height = 6}
 varReductionPlot(1, off_scaled_df)
 ```
 
-The plot above illustrates the 'variance reductions' for normalized statistic values, comparing teams in offensive cluster 1 to the full population of teams. Since each statistic is normalized, each has a variance of 1 across all teams. To compute the variance reduction for a given metric within a specific cluster, we simply calculate: Variance Reduction = 1 - variance of that statistic for teams within the cluster of interest.
+The plot above illustrates the 'variance reductions' for normalized statistic values, comparing teams in offensive cluster 1 to the full population of teams. Since each statistic is normalized, each has a variance of 1 across all teams. To compute the variance reduction for a given metric within a specific cluster, we simply calculate: Variance Reduction = 1 - variance of that statistic for teams within the cluster of interest.  
 
-The purpose of this metric is to help to identify which statistics are 'defining characteristics' of the cluster. The underlying intuition is that if teams within a cluster show lower variance for a particular statistic than the whole dataset does, that statistic most likely represents a shared trait among teams in that cluster. Importantly, this does not indicate whether the cluster performs better or worse in that statistic than average, it only means that teams within that cluster perform similarly for that metric.
+The purpose of this metric is to help to identify which statistics are 'defining characteristics' of the cluster. The underlying intuition is that if teams within a cluster show lower variance for a particular statistic than the whole dataset does, that statistic most likely represents a shared trait among teams in that cluster. Importantly, this does not indicate whether the cluster performs better or worse in that statistic than average, it only means that teams within that cluster perform similarly for that metric.  
 
-As seen above, several statistics emerge as 'defining characteristics' for offensive cluster 1. Particularly, Off_1 and Off_3 (proportion of points from free throws and three pointers, respectively), off_eff_adj (adjusted offensive efficiency), and off_eFGPct (effective field goal percentage), among others, show meaningful variance reduction, and are all statistics which teams in offensive cluster 1 have similar values in.
+As seen above, several statistics emerge as 'defining characteristics' for offensive cluster 1. Particularly, Off_1 and Off_3 (proportion of points from free throws and three pointers, respectively), off_eff_adj (adjusted offensive efficiency), and off_eFGPct (effective field goal percentage), among others, show meaningful variance reduction, and are all statistics which teams in offensive cluster 1 have similar values in.  
 
-To more fully understand characteristics of a cluster and their 'defining characteristics', we can generate a polygon plot that shows the average standardized values of statistics with a variance reduction of 0.25 or greater. This visual allows comparison of the how the cluster at hand performs in key metric areas as compared to the rest of the dataset.
+To more fully understand characteristics of a cluster and their 'defining characteristics', we can generate a polygon plot that shows the average standardized values of statistics with a variance reduction of 0.25 or greater. This visual allows comparison of the how the cluster at hand performs in key metric areas as compared to the rest of the dataset.  
 
 ```{r}
 makePolyPlot(1, off_scaled_df)
 ```
-This polygon plot displays the average standardized values of each defining characteristic for offensive cluster 1 (shown in red) compared to the overall dataset average for each metric (shown in blue). With this visual comparison, we can better understand the strengths and weaknesses of this cluster.
+This polygon plot displays the average standardized values of each defining characteristic for offensive cluster 1 (shown in red) compared to the overall dataset average for each metric (shown in blue). With this visual comparison, we can better understand the strengths and weaknesses of this cluster.  
 
-Notably, offensive cluster 1 exhibits a significantly higher Off_1 value, indicating a greater proprtion of their points come from free throws compared to an average team. This is further supported by an elevated off_FTRate (free throw rate). Additionally, this cluster shows high values in off_TOPct (turnover percentage) and off_NSTRate (non-steal turnover rate), suggesting a tendency towards sloppy offensive play and high frequency of turnovers. On top of these issues, we see that the cluster has a very low off_eff_adj (adjusted offensive efficiency) compared to the average team, indicating that teams within this cluster are generally poor offenses.
+Notably, offensive cluster 1 exhibits a significantly higher Off_1 value, indicating a greater proprtion of their points come from free throws compared to an average team. This is further supported by an elevated off_FTRate (free throw rate). Additionally, this cluster shows high values in off_TOPct (turnover percentage) and off_NSTRate (non-steal turnover rate), suggesting a tendency towards sloppy offensive play and high frequency of turnovers. On top of these issues, we see that the cluster has a very low off_eff_adj (adjusted offensive efficiency) compared to the average team, indicating that teams within this cluster are generally poor offenses.  
 
-Based on these patterns, we might label this archetype "Sloppy Slashers", reflecting their reliance on getting to the free throw line to score, but also their poor ball controll and overall offensive inefficiency.
+Based on these patterns, we might label this archetype "Sloppy Slashers", reflecting their reliance on getting to the free throw line to score, but also their poor ball controll and overall offensive inefficiency.  
 
-A similar analysis can be performed across all offensive and defensive clusters. This two-faceted analysis approach not only allows us to quantify matchup effectiveness using performance over expectation metrics, but also enhances our understanding of the statistical traits that define each cluster, connecting numerical similarities to real-life team identities.
+A similar analysis can be performed across all offensive and defensive clusters. This two-faceted analysis approach not only allows us to quantify matchup effectiveness using performance over expectation metrics, but also enhances our understanding of the statistical traits that define each cluster, connecting numerical similarities to real-life team identities.  
 
 ### Team and Cluster Visualization Dashboard
-In addition to the above visualizations, we have created an interactive Shiny Dashboard, which allows a more clear and holistic visualization for matchup analysis and identification of 'defining characteristics' for the various offensive and defensive clusters. This application is located within the folder CBB_Archetype_Dashboard, and can be ran simply by opening the app.R file and executing the script.
+In addition to the above visualizations, we have created an interactive Shiny Dashboard, which allows a more clear and holistic visualization for matchup analysis and identification of 'defining characteristics' for the various offensive and defensive clusters. This application is located within the folder CBB_Archetype_Dashboard, and can be ran simply by opening the app.R file and executing the script.  
 
 ## Results
+The process of clustering college basketball teams into offensive and defensive clusters has provided us with a multitude of meaningful deliverable results. First and foremost, our archetype matchup ‘matrix’ acts as a basis for understanding how any defined offensive ‘archetype’ performs (over expectation) against each defensive ‘archetype’. Additionally, the emphasis on identification of defining characteristics of each cluster allows for a deeper understanding of how teams in college basketball are differentiated. Finally, our visualization dashboard acts as an interface for fans, analysts, and team faculty alike to use to understand the breadth of our analysis.  
+
+A multitude of impacts throughout college basketball analysis, team building, and strategy come as a result of these deliverables. First, from the perspective of analyzing team performance, a fan or analyst is able to make statistically supported claims about favorable or unfavorable matchups for a specific team. From both the perspective of a team’s offensive and defensive archetype, historical performance results tell us what sorts of matchups prove to challenge (or benefit) specific teams based on their play style. Furthermore, a deeper dive into the defining characteristics of an archetype of interest can provide insight into what makes this offense or defense what it is, understanding its flaws and strengths, analyzing what differentiates it from other teams, and understanding why good and bad matchups exist for a team.  
+
+Additionally, from the perspective of uses for a college basketball team, the value of understanding strengths and weaknesses on both sides of the ball, as well as matchups in which your team might struggle, is clear. These insights may provide additional uses in team building and recruiting, development focuses, and play style changes, in order to optimize team performance. On top of this, there is clear value in understanding these same defining characteristics and matchup favorabilities when scouting and preparing for opposing teams. In analyzing what types of teams one’s opponent may particularly struggle against, a team may change their game plan to take advantage of these struggles seeking to give their team the best chance.    
 
 
 ## Conclusion
-
+After performing clustering of college basketball teams into offensive and defensive ‘archetypes’, analyzing defining characteristics within these archetypes, and understanding how each archetype performs relative to expectations against opponents, we are left with a lot of valuable insight. First, we come to realize that after purely grouping teams numerically using advanced metrics, we receive groupings that make sense in the context of basketball. With factors including overall efficiency, pace of play, scoring distribution, experience, shot usage, and more, these defined ‘archetypes’ are similar to the perceived groupings of team styles that exist within college basketball. By analyzing the importance and consistency of various metrics within each cluster, we can translate the results of the groupings into cluster names and descriptions that align with public perspectives of college basketball ‘team builds’. In viewing performance of a cluster versus each opposing archetype, we come to the conclusion that for each archetype, there are types of teams that they perform both over and under expectation against, supporting the notion that favorable and unfavorable matchups do exist for every team depending on their archetype. In totality, the grouping of college basketball teams into offensive and defensive archetypes, understanding each archetype’s defining characteristics, strengths, and weaknesses, and understanding how each archetype performs against others, we have produced a new framework that supports the analysis of how advanced metrics provide insight to game results in college basketball.  
 
 ## Future Work
+Despite a thorough analysis of how college basketball teams can be grouped into offensive and defensive clusters, and how these clusters influence matchup results, a variety of improvements and expansions can be made to create additional valuable insight that supplements our analysis.   
+
+First, we could expand upon this project by diving deeper into the modeling aspect that backs the clustering process. Specifically, K-means clustering, the technique used in this study, is a widely used technique when it comes to unsupervised clustering models. K-means clustering allows for team grouping based on advanced analytics as desired, but it is not the only approach that exists. Going through a more thorough model selection process would allow us to more solidly decide if the number of clusters chosen was correct and potentially leave a lot less up to interpretation. Though our goal was to create team groupings that made sense in a basketball context, ensuring that we are most efficiently splitting teams into clusters based on the features used is of utmost importance. Alongside a more methodical model selection process, variable selection and exploratory analysis on our advanced metrics used as variables could supplement our clustering process. Specifically, more advanced methods, including feature transformations and a penalized clustering algorithm could allow for more distinctive cluster creation, as well as tuning in on the most important team metrics that allow groupings of college basketball teams.   
+
+Additionally, we could make a variety of advancements on the framework already obtained within this study to advance the insights and usability in practice. Three such ideas come to the forefront among many possibilities: cluster similarity quantification, cluster matchup win simulation, and team archetype persistence.  
+
+The concept behind cluster similarity quantification is that based on the methodology behind K-Means clustering, though a specific observation (team) can be marked as closest to being one specific cluster, it may not be ‘far’ from being another cluster, or can be geometrically ‘between’ defined clusters. Because of this geometrical definition of clusters, we are able to define cluster similarity for each team based on how far away they are from each cluster center. This analysis allows us to not bucket a team into one specific ‘archetype’, but rather understand where teams may be a blend of two plus archetypes. This analysis allows us to deepen our understanding of how a team may match up with opponents of varying play styles from the perspective of this ‘blended’ archetype.  
+
+Next, the ability to “simulate matchups between clusters” may be useful to determine true expected results of matchups between two archetypes. Though this is more advanced, concepts including bootstrapping and Monte Carlo simulation would allow this process, and supplement the understanding of interactions between offensive and defensive archetypes.  
+
+Finally, and maybe most interestingly, is the concept of quantifying team archetype persistence. Specifically, the idea is that in our study, schools across each season in the dataset are treated as separate entities. In reality, teams and programs should have some sort of structure and persistence in team build, play style, strengths and weaknesses, etc. This may differ, though, depending on the team, as some teams recruit towards a play style, and others play based on their team's strengths. Using cluster similarity for schools across years, we could provide quantitative analysis on how much teams change in archetype from year to year, leading possibly to an advanced understanding of recruiting strategies, program philosophies, and more.  
