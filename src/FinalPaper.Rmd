@@ -6,19 +6,35 @@ output: pdf_document
 ---
 
 ## Introduction
+College basketball is a strategic game where a team's success depends on more than just athletic talent: team strategy and composition are important as well. In college basketball, two teams of five players at a time compete by trying to outscore the other team. To score, they must shoot a basketball through the opposing team's hoop, worth 1-3 points for each basket depending on where the shot is from (1 point for free throws after a foul, 2 for field goals within the 3 point line, and 3 points for field goals behind the three point line). The college basketball games are played in two 20-minute halves. In this project we're looking specifically at the Power 5, which has 5 conferences (ACC, Big Ten, Big 12, Pac-12, and SEC), and 70 total teams. We'll be looking at the seasons from 2019-2024.
+
+One of the most interesting parts of college basketball is the difference in playing styles between teams. Some teams have offenses with fast pace and consistent 3-point shooting as their focus, while other teams might have a more center dominant offense, and there's also differences in defensive styles. We're aiming to understand how these styles (which we’ll refer to as archetypes) perform against each other, which will offer insights into matchup dynamics and competitive advantages in certain matchups.
+
+We will use clustering to group the Power 5 teams into archetypes based on performance metrics such as offensive and defensive efficiency, effective field goal percentage, pace, etc. After identifying these archetypes, we'll analyze their performance in matchups to explore whether certain styles consistently outperform others.
 
 
 ## Data
+The data for our college basketball matchup analysis combines multiple datasets focusing on Power 5 conference teams across 6 seasons (2019-2024). We utilize advanced basketball metrics from KenPom.com, which provides detailed team statistics that go beyond traditional box score numbers. We also incorporate game results data from ncaahoopR, an R package that provides access to NCAA basketball matchup data.
 
+### Data Sources
+Our primary data comes from several related datasets:
 
-### Read in Data
+- Team Advanced Metrics: We collected comprehensive team statistics including the "Four Factors" (effective field goal percentage, turnover rate, offensive rebounding percentage, and free throw rate) for both offense and defense.
+- Efficiency and Tempo: Each team's adjusted offensive and defensive efficiency ratings, along with pace metrics that describe how quickly teams play.
+- Player and Team Attributes: Height data, experience levels, and bench utilization statistics.
+- Game Results: Outcomes of individual games, including scores, location (home/away/neutral), and dates.
+- Point Distribution Data: Breakdowns of how teams score their points (free throws, 2-pointers, 3-pointers).
+
+### Data Processing
+We merged 6 seasons of data (2019-2024) for each metric category into combined datasets. We then filtered the data to focus only on teams in the Power 5 conferences (SEC, Pac-12, ACC, Big Ten, and Big 12). Then we renamed columns to create consistent naming conventions that distinguish between offensive and defensive metrics. Lastly, the separate metric categories were joined together using team names and seasons as matching keys.
+
+#### Read in Data
 ```{r}
 mergeDataStr <- paste0(getwd(), "/data/merged_data.csv")
 mergeData <- read.csv(mergeDataStr)
 ```
 
-
-### Filter Data to Power 5, Rename Columns
+#### Filter Data to Power 5, Rename Columns
 ```{r}
 p5Conf <- c("SEC", "P12", "ACC", "B10", "B12")
 
@@ -80,8 +96,9 @@ p5Data <- mergeData %>%
   select(-ends_with(".y"))
 ```
 
+### Feature Selection
+For our clustering analysis, we focused on metrics that describe a team's playing style. We removed ranking variables and other columns not directly relevant to our analysis:
 
-### Narrow in Data for PCA/K Means Clustering
 ```{r}
 pca_data <- p5Data %>% 
   select(-Conf, -seed) %>% 
@@ -92,6 +109,9 @@ pca_data <- p5Data %>%
 
 ```
 
+We further refined our datasets for offensive and defensive clustering, as shown in methods section below.
+
+The final dataset includes 350+ team-seasons, 100+ performance metrics per team, and over 11,000 games with Power 5 teams. This dataset provides the foundation for our archetype identification and matchup analysis, allowing us to identify patterns in team playing styles and evaluate how different stylistic approaches perform against one another.
 
 ## Methods and Analysis
 To group college basketball teams on similar characteristics, we applied K-Means clustering to advanced team metrics obtained from KenPom.com. The decision on how to create these groupings, and what metrics to use to define them, was one that had a variety of options. Ultimately, we chose to perform separate offensive and defensive clusterings. This decision was driven by our focus on quantifying favorable and unfavorable matchups, as well as the limitations existing in both the dataset and modeling methodology.
