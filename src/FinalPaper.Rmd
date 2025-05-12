@@ -111,7 +111,7 @@ pca_data <- p5Data %>%
 
 We further refined our datasets for offensive and defensive clustering, as shown in methods section below.
 
-The final dataset includes 350+ team-seasons, 100+ performance metrics per team, and over 11,000 games with Power 5 teams. This dataset provides the foundation for our archetype identification and matchup analysis, allowing us to identify patterns in team playing styles and evaluate how different stylistic approaches perform against one another.
+The final dataset includes 400+ team-seasons, 45 performance metrics per team, and over 11,000 games with Power 5 teams. This dataset provides the foundation for our archetype identification and matchup analysis, allowing us to identify patterns in team playing styles and evaluate how different stylistic approaches perform against one another.
 
 ## Methods and Analysis
 To group college basketball teams on similar characteristics, we applied K-Means clustering to advanced team metrics obtained from KenPom.com. The decision on how to create these groupings, and what metrics to use to define them, was one that had a variety of options. Ultimately, we chose to perform separate offensive and defensive clusterings. This decision was driven by our focus on quantifying favorable and unfavorable matchups, as well as the limitations existing in both the dataset and modeling methodology.
