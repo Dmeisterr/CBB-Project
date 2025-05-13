@@ -461,6 +461,53 @@ getMarginOverExpected <- function(teamName, opponentName, gameSeason, netratings
   
   return(margins)
 }
+
+getWinPct <- function(teamName, opponentName, gameSeason, netratings, gamesData) {
+  underscoreTeam <- gsub(" ", "_", teamName)
+  underscoreTeam <- recode(underscoreTeam, !!!teamConversions)
+  
+  # Grab game(s) with these two teams
+  gameRow <- gamesData %>% 
+    filter(team == underscoreTeam, opponent == opponentName, season == gameSeason)
+  
+  if(nrow(gameRow) == 0) {
+    errStr <- paste("ERROR: Couldn't find game between", teamName, " and ", opponentName, " season ", gameSeason)
+    #print(errStr)
+    return(NA)
+  }
+  
+  # Get KenPom Adj Efficiency Margin Ratings
+  teamRtg <- getTeamRating(teamName, gameSeason, netratings)
+  oppRtg <- getTeamRating(opponentName, gameSeason, netratings)
+  
+  wins <- c()
+  for(i in 1:nrow(gameRow)){ # For each game
+    
+    # Get Team Score, Opponent Score, and Location
+    teamScore <- gameRow$team_score[i]
+    oppScore <- gameRow$opp_score[i]
+    location <- gameRow$location[i]
+    
+    # Get Home Court Advantage Value
+    homeCourtAdvantage <- 0
+    if(location == "H") {
+      homeCourtAdvantage <- 3
+    } else if (location == "A") {
+      homeCourtAdvantage <- -3
+    }
+    
+    winInd <- 0
+    if(teamScore > oppScore) {
+      winInd <- 1
+    }
+    
+    
+    
+    wins <- c(wins, winInd)
+  }
+  
+  return(wins)
+}
 ```
 
 
@@ -470,6 +517,7 @@ numDefClusters <- length(unique(defensiveDataMin$FullCluster))
 margin <- matrix(0, nrow = numOffClusters, ncol = numDefClusters)
 num <- matrix(0, nrow = numOffClusters, ncol = numDefClusters)
 perfOverExpect <- matrix(0, nrow = numOffClusters, ncol = numDefClusters)
+winPct <- matrix(0, nrow = numOffClusters, ncol = numDefClusters)
 
 for(i in 1:nrow(offensiveDataMin)) {
   teamName <- offensiveDataMin$TeamName[i]
@@ -516,6 +564,7 @@ for(i in 1:nrow(offensiveDataMin)) {
     
     # Get Margin Over Expected values for games between these teams
     moes <- getMarginOverExpected(teamName, oppName, currSeason, netratings_all, gamesData)
+    wins <- getWinPct(teamName, oppName, currSeason, netratings_all, gamesData)
 
     if (is.na(moes[1])) {
       next
@@ -529,6 +578,10 @@ for(i in 1:nrow(offensiveDataMin)) {
       margin[teamOffCluster, oppDefCluster] <- margin[teamOffCluster, oppDefCluster] + moe
       num[teamOffCluster, oppDefCluster] <- num[teamOffCluster, oppDefCluster] + 1
     }
+    
+    for (win in wins) {
+      winPct[teamOffCluster, oppDefCluster] <- winPct[teamOffCluster, oppDefCluster] + win
+    }
   }
 }
 ```
@@ -539,8 +592,10 @@ for (k in 1:nrow(margin)) {
   for (m in 1:ncol(margin)) {
     if (num[k, m] > 0) {
       perfOverExpect[k, m] <- margin[k, m] / num[k, m]
+      winPct[k, m] <- winPct[k, m] / num[k, m]
     } else {
       perfOverExpect[k, m] <- NA  # Avoid division by zero
+      winPct[k, m] <- NA
     }
   }
 }
@@ -585,8 +640,22 @@ ggplot(perf_df, aes(x = Defensive, y = Offensive, fill = Value)) +
   labs(title = "Performance Over Expectation Heatmap") +
   coord_fixed()
 ```
+```{r, fig.height = 5}
+rownames(winPct) <- offensiveClusterNames
+colnames(winPct) <- defensiveClusterNames
 
-![Win Percentage Matrix (in perspective of Offensive Cluster)](winPctPlot.png)
+win_df <- melt(winPct)
+colnames(win_df) <- c("Offensive", "Defensive", "Value")
+
+ggplot(win_df, aes(x = Defensive, y = Offensive, fill = Value)) +
+  geom_tile(color = "white") +
+  scale_fill_gradientn(colors = c("red", "orange", "yellow", "green")) +
+  geom_text(aes(label = round(Value, 2)), size = 3) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Win Percentage Heatmap") +
+  coord_fixed()
+```
 
 The performance over expectation matrix can be visualized above in the form of a heatmap, and for supplementary purposes, we have included a win percentage matrix with a similar approach.  
 
