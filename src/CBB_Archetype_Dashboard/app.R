@@ -13,6 +13,8 @@ library(tidyverse)
 library(ggplot2)
 library(DT)
 
+source("functions.R")
+
 # Set working directory to inside CBB_Archetype_Dashboard
 
 perfOverExpect <- readRDS("perfOverExpect.rds")
